@@ -109,7 +109,7 @@ class Activity:
 class UserConfig:
     def __init__(self, name: str, uid: int = None, token: str = None, city: str = None, spt: str = None,
                  lnt: float = None,
-                 lat: float = None):
+                 lat: float = None, auto_bargain: bool = False):
         """
         :param name: 名称
         :param uid: uid 毫秒级时间戳
@@ -118,6 +118,7 @@ class UserConfig:
         :param spt: 推送spt
         :param lnt: 纬度
         :param lat: 经度
+        :param auto_bargain: 是否自动砍价，默认为False
         """
         self.name = name
         self.uid = uid
@@ -126,6 +127,7 @@ class UserConfig:
         self.spt = spt
         self.lnt = lnt
         self.lat = lat
+        self.auto_bargain = auto_bargain
 
     @classmethod
     def from_dict(cls, data: dict):
@@ -141,7 +143,8 @@ class UserConfig:
             city=data.get('city'),
             spt=data.get('spt'),
             lnt=data.get('lnt'),
-            lat=data.get('lat')
+            lat=data.get('lat'),
+            auto_bargain=data.get('auto_bargain', False)
         )
 
     def __str__(self):
@@ -159,7 +162,8 @@ class UserConfig:
             "city": self.city,
             "spt": self.spt,
             "lnt": self.lnt,
-            "lat": self.lat
+            "lat": self.lat,
+            "auto_bargain": self.auto_bargain
         }
 
 
@@ -193,3 +197,9 @@ class HttpResult:
 
     def __str__(self):
         return f"HttpResult(code={self.code}, msg={self.msg}, data={self.data})"
+
+
+class City:
+    def __init__(self, name, req_token):
+        self.name = name
+        self.req_token = req_token

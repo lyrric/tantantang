@@ -24,8 +24,12 @@ SECRET_KEY = 'django-insecure-uaz%6owvq7q*#1ma!t*!nv55n!*4yzmht6vk1di&n(rd-n!z)b
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
+STATICFILES_DIRS = [
+    BASE_DIR / "static",  # 项目根目录下的static文件夹
+]
+STATIC_URL = '/static/'
 # Application definition
 
 INSTALLED_APPS = [

@@ -2,7 +2,7 @@ from typing import List
 
 import aiohttp
 import tantantang.logging_config
-from tantantang.models import Activity
+from tantantang.models import Activity, HttpResult
 
 log = tantantang.logging_config.get_logger(__name__)
 
@@ -11,7 +11,7 @@ BASE_URL = 'https://ttt.bjlxkjyxgs.cn'
 
 async def activity(cate_id=0, cate2_id=0, title=None, page=1, limit=10,
                    lon=None, lat=None, city=None, area=None, street=None,
-                   req_token=None, token=None) -> List[Activity]:
+                   req_token=None, token=None) -> list[Activity]:
     """
     :param cate_id: 跟第一个筛选有关系
     :param cate2_id:
@@ -48,6 +48,31 @@ async def activity(cate_id=0, cate2_id=0, title=None, page=1, limit=10,
                 if code == 1:
                     data_list = result_dict['data']['data']
                     result: List[Activity] = [Activity.from_dict(data) for data in data_list]
+                    return result
+                else:
+                    raise Exception(f"获取活动列表失败 {result_dict['msg']}")
+            else:
+                log.warn(f"获取活动列表失败 {response.reason}")
+                raise Exception(f"获取活动列表失败 {response.reason}")
+
+
+#砍价
+async def bar_gain(token, activitygoods_id) -> HttpResult:
+    """
+    :return:
+    """
+    async with aiohttp.ClientSession() as session:
+        async with session.post(BASE_URL + "/api/shop/activity",
+                                data={
+                                    "activitygoods_id": activitygoods_id
+                                },
+                                headers=get_headers(token)) as response:
+            if response.ok:
+                result_dict = await response.json()
+                code = result_dict['code']
+                if code == 1:
+                    data = result_dict['data']
+                    result = HttpResult.ok(data)
                     return result
                 else:
                     raise Exception(f"获取活动列表失败 {result_dict['msg']}")

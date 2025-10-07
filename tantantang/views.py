@@ -5,7 +5,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
 from tantantang.models import UserConfig, HttpResult
-from tantantang.user_config import (
+from tantantang.user_config_service import (
     add_user_config,
     get_all_user_configs,
     get_user_config_by_uid,
@@ -45,24 +45,6 @@ def get_user_configs(request):
             for config in user_configs:
                 configs_data.append(config.to_dict())
             return JsonResponse(HttpResult.ok(configs_data).to_dict())
-        except Exception as e:
-            return JsonResponse(HttpResult.error(str(e)).to_dict(), status=500)
-    else:
-        return JsonResponse(HttpResult.error('Method not allowed').to_dict(), status=405)
-
-
-def get_user_config(request, uid):
-    """
-    根据UID获取特定用户配置
-    """
-    if request.method == 'GET':
-        try:
-            user_config = get_user_config_by_uid(uid)
-            if user_config:
-                config_data = user_config.to_dict()
-                return JsonResponse(HttpResult.ok(config_data).to_dict())
-            else:
-                return JsonResponse(HttpResult.error('UserConfig not found').to_dict(), status=404)
         except Exception as e:
             return JsonResponse(HttpResult.error(str(e)).to_dict(), status=500)
     else:
