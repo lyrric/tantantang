@@ -109,7 +109,7 @@ class Activity:
 class UserConfig:
     def __init__(self, name: str, uid: int = None, token: str = None, city: str = None, spt: str = None,
                  lnt: float = None,
-                 lat: float = None, auto_bargain: bool = False):
+                 lat: float = None, auto_bargain: bool = False, user_id: int = None):
         """
         :param name: 名称
         :param uid: uid 毫秒级时间戳
@@ -119,6 +119,7 @@ class UserConfig:
         :param lnt: 纬度
         :param lat: 经度
         :param auto_bargain: 是否自动砍价，默认为False
+        :param user_id: 用户ID
         """
         self.name = name
         self.uid = uid
@@ -128,6 +129,7 @@ class UserConfig:
         self.lnt = lnt
         self.lat = lat
         self.auto_bargain = auto_bargain
+        self.user_id = user_id
 
     @classmethod
     def from_dict(cls, data: dict):
@@ -144,11 +146,12 @@ class UserConfig:
             spt=data.get('spt'),
             lnt=data.get('lnt'),
             lat=data.get('lat'),
-            auto_bargain=data.get('auto_bargain', False)
+            auto_bargain=data.get('auto_bargain', False),
+            user_id=data.get('user_id')
         )
 
     def __str__(self):
-        return f"UserConfig(_id={self.uid}, name='{self.name}', city='{self.city}')"
+        return f"UserConfig(_id={self.uid}, name='{self.name}', city='{self.city}', user_id={self.user_id})"
 
     def to_dict(self):
         """
@@ -163,7 +166,8 @@ class UserConfig:
             "spt": self.spt,
             "lnt": self.lnt,
             "lat": self.lat,
-            "auto_bargain": self.auto_bargain
+            "auto_bargain": self.auto_bargain,
+            "user_id": self.user_id
         }
 
 
@@ -199,7 +203,176 @@ class HttpResult:
         return f"HttpResult(code={self.code}, msg={self.msg}, data={self.data})"
 
 
-class City:
-    def __init__(self, name, req_token):
-        self.name = name
-        self.req_token = req_token
+# 用户信息
+class UserInfo:
+    def __init__(self, id: int = None, group_id: int = None, username: str = None, nickname: str = None,
+                 mobile: str = None, avatar: str = None, bio: str = None, score: int = None, is_vip: int = None,
+                 province: str = None, city: str = None, area: str = None, fans: int = None, gz: int = None,
+                 like: int = None, coll: int = None, lon: float = None, lat: float = None, last_time: str = None,
+                 sign_count: int = None, sign_sum: int = None, idnum: str = None, is_sale: int = None,
+                 all_money: int = None, have_money: int = None, give_money: int = None, b_card: int = None,
+                 token: str = None, user_id: int = None, createtime: int = None, expiretime: int = None,
+                 expires_in: int = None, have: int = None, daren: int = None, usable_coupon_num: int = None):
+        """
+        :param id: 用户ID
+        :param group_id: 组ID
+        :param username: 用户名 u+id
+        :param nickname: 昵称
+        :param mobile: 手机号
+        :param avatar: 头像URL
+        :param bio: 个人简介
+        :param score: 糖果数量
+        :param is_vip: 是否VIP
+        :param province: 省份
+        :param city: 城市
+        :param area: 区域
+        :param fans: 粉丝数
+        :param gz: 关注数
+        :param like: 点赞数
+        :param coll: 收藏数
+        :param lon: 经度
+        :param lat: 纬度
+        :param last_time: 最后登录时间
+        :param sign_count: 签到次数
+        :param sign_sum: 签到总次数
+        :param idnum: ID编号
+        :param is_sale: 是否销售人员
+        :param all_money: 总金额
+        :param have_money: 拥有金额
+        :param give_money: 赠送金额
+        :param b_card: B卡数量
+        :param token: 用户token，也是6居然返回header头的token
+        :param user_id: 用户ID
+        :param createtime: 创建时间戳
+        :param expiretime: 过期时间戳
+        :param expires_in: 有效期
+        :param have: 拥有数量
+        :param daren: 是否达人
+        :param usable_coupon_num: 可用优惠券数量
+        """
+        self.id = id
+        self.group_id = group_id
+        self.username = username
+        self.nickname = nickname
+        self.mobile = mobile
+        self.avatar = avatar
+        self.bio = bio
+        self.score = score
+        self.is_vip = is_vip
+        self.province = province
+        self.city = city
+        self.area = area
+        self.fans = fans
+        self.gz = gz
+        self.like = like
+        self.coll = coll
+        self.lon = lon
+        self.lat = lat
+        self.last_time = last_time
+        self.sign_count = sign_count
+        self.sign_sum = sign_sum
+        self.idnum = idnum
+        self.is_sale = is_sale
+        self.all_money = all_money
+        self.have_money = have_money
+        self.give_money = give_money
+        self.b_card = b_card
+        self.token = token
+        self.user_id = user_id
+        self.createtime = createtime
+        self.expiretime = expiretime
+        self.expires_in = expires_in
+        self.have = have
+        self.daren = daren
+        self.usable_coupon_num = usable_coupon_num
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        """
+        从字典创建UserInfo实例
+        :param data: 包含UserInfo属性的字典
+        :return: UserInfo实例
+        """
+        return cls(
+            id=data.get('id'),
+            group_id=data.get('group_id'),
+            username=data.get('username'),
+            nickname=data.get('nickname'),
+            mobile=data.get('mobile'),
+            avatar=data.get('avatar'),
+            bio=data.get('bio'),
+            score=data.get('score'),
+            is_vip=data.get('is_vip'),
+            province=data.get('province'),
+            city=data.get('city'),
+            area=data.get('area'),
+            fans=data.get('fans'),
+            gz=data.get('gz'),
+            like=data.get('like'),
+            coll=data.get('coll'),
+            lon=data.get('lon'),
+            lat=data.get('lat'),
+            last_time=data.get('last_time'),
+            sign_count=data.get('sign_count'),
+            sign_sum=data.get('sign_sum'),
+            idnum=data.get('idnum'),
+            is_sale=data.get('is_sale'),
+            all_money=data.get('all_money'),
+            have_money=data.get('have_money'),
+            give_money=data.get('give_money'),
+            b_card=data.get('b_card'),
+            token=data.get('token'),
+            user_id=data.get('user_id'),
+            createtime=data.get('createtime'),
+            expiretime=data.get('expiretime'),
+            expires_in=data.get('expires_in'),
+            have=data.get('have'),
+            daren=data.get('daren'),
+            usable_coupon_num=data.get('usable_coupon_num')
+        )
+
+    def __str__(self):
+        return f"UserInfo(id={self.id}, username='{self.username}', nickname='{self.nickname}', score={self.score})"
+
+    def to_dict(self):
+        """
+        将UserInfo实例转换为字典
+        :return: 包含UserInfo所有属性的字典
+        """
+        return {
+            "id": self.id,
+            "group_id": self.group_id,
+            "username": self.username,
+            "nickname": self.nickname,
+            "mobile": self.mobile,
+            "avatar": self.avatar,
+            "bio": self.bio,
+            "score": self.score,
+            "is_vip": self.is_vip,
+            "province": self.province,
+            "city": self.city,
+            "area": self.area,
+            "fans": self.fans,
+            "gz": self.gz,
+            "like": self.like,
+            "coll": self.coll,
+            "lon": self.lon,
+            "lat": self.lat,
+            "last_time": self.last_time,
+            "sign_count": self.sign_count,
+            "sign_sum": self.sign_sum,
+            "idnum": self.idnum,
+            "is_sale": self.is_sale,
+            "all_money": self.all_money,
+            "have_money": self.have_money,
+            "give_money": self.give_money,
+            "b_card": self.b_card,
+            "token": self.token,
+            "user_id": self.user_id,
+            "createtime": self.createtime,
+            "expiretime": self.expiretime,
+            "expires_in": self.expires_in,
+            "have": self.have,
+            "daren": self.daren,
+            "usable_coupon_num": self.usable_coupon_num
+        }
