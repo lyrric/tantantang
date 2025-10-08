@@ -102,17 +102,94 @@ class Activity:
         )
 
     def __str__(self):
-        return f"Activity(title='{self.title}', price={self.price}, shop_name='{self.shop_name}, sy_store='{self.sy_store}')"
+        return f"Activity(activitygoods_id={self.activitygoods_id},title='{self.title}', price={self.price}, shop_name='{self.shop_name}, sy_store='{self.sy_store}')"
+
+
+# 砍价状态
+class BarGainState:
+    """
+    砍价状态
+    """
+
+    def __init__(self, user_config_id: int, status=1, city=None, page_num=None, page_size=None, current_time=None):
+        """
+        初始化BarGainState实例
+        :param user_config_id: 用户配置ID
+        :param status: 状态 1：未开始，2：进行中，3：暂停，4：已完成
+        :param city: 城市名称
+        :param page_num: 页码
+        :param page_size: 每页数量
+        :param current_time: 当前时间
+        """
+        self.user_config_id = user_config_id
+        self.status = status
+        self.city = city
+        self.page_num = page_num
+        self.page_size = page_size
+        self.current_time = current_time
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        """
+        从字典创建BarGainStatus实例
+        :param data: 包含BarGainStatus属性的字典
+        :return: BarGainStatus实例
+        """
+        current_time = data.get('current_time')
+        # 如果current_time是字符串，则转换为datetime对象
+        if isinstance(current_time, str):
+            try:
+                import datetime
+                current_time = datetime.datetime.fromisoformat(current_time)
+            except ValueError:
+                current_time = None
+
+        return cls(
+            user_config_id=data.get('user_config_id'),
+            status=data.get('status'),
+            city=data.get('city'),
+            page_num=data.get('page_num'),
+            page_size=data.get('page_size'),
+            current_time=current_time
+        )
+
+    @classmethod
+    def from_default(cls, user_config_id):
+        return cls(
+            user_config_id=user_config_id,
+            status=1
+        )
+
+    def __str__(self):
+        return f"BarGainState(user_config_id={self.user_config_id}, status={self.status}, city='{self.city}', page_num={self.page_num}, page_size={self.page_size})"
+
+    def to_dict(self):
+        """
+        将BarGainState实例转换为字典
+        :return: 包含BarGainState所有属性的字典
+        """
+        current_time = self.current_time
+        if current_time is not None:
+            # 将datetime对象转换为字符串格式，以便JSON序列化
+            current_time = current_time.isoformat()
+
+        return {
+            "user_config_id": self.user_config_id,
+            "status": self.status,
+            "city": self.city,
+            "page_num": self.page_num,
+            "page_size": self.page_size,
+            "current_time": current_time
+        }
 
 
 # 用户配置
 class UserConfig:
-    def __init__(self, name: str, uid: int = None, token: str = None, city: str = None, spt: str = None,
-                 lnt: float = None,
-                 lat: float = None, auto_bargain: bool = False, user_id: int = None):
+    def __init__(self, name: str, user_id: int = None, token: str = None, city: str = None, spt: str = None,
+                 lnt: float = None, lat: float = None,
+                 auto_bargain: bool = False, key: str = None, bar_gain_state: BarGainState = None):
         """
         :param name: 名称
-        :param uid: uid 毫秒级时间戳
         :param token: token
         :param city: 城市
         :param spt: 推送spt
@@ -120,9 +197,10 @@ class UserConfig:
         :param lat: 经度
         :param auto_bargain: 是否自动砍价，默认为False
         :param user_id: 用户ID
+        :param key: 砍价时用到的参数
+        :param bar_gain_state: 砍价状态
         """
         self.name = name
-        self.uid = uid
         self.token = token
         self.city = city
         self.spt = spt
@@ -130,6 +208,8 @@ class UserConfig:
         self.lat = lat
         self.auto_bargain = auto_bargain
         self.user_id = user_id
+        self.key = key
+        self.bar_gain_state = bar_gain_state
 
     @classmethod
     def from_dict(cls, data: dict):
@@ -138,20 +218,24 @@ class UserConfig:
         :param data: 包含UserConfig属性的字典
         :return: UserConfig实例
         """
+        bar_gain_state = None
+        if data.get('bar_gain_state') is not None:
+            bar_gain_state = BarGainState.from_dict(data.get('bar_gain_state'))
         return cls(
             name=data.get('name'),
-            uid=data.get('uid'),
             token=data.get('token'),
             city=data.get('city'),
             spt=data.get('spt'),
             lnt=data.get('lnt'),
             lat=data.get('lat'),
             auto_bargain=data.get('auto_bargain', False),
-            user_id=data.get('user_id')
+            user_id=data.get('user_id'),
+            key=data.get('key'),
+            bar_gain_state=bar_gain_state
         )
 
     def __str__(self):
-        return f"UserConfig(_id={self.uid}, name='{self.name}', city='{self.city}', user_id={self.user_id})"
+        return f"UserConfig(_id={self.user_id}, name='{self.name}', city='{self.city}', user_id={self.user_id}, key='{self.key}')"
 
     def to_dict(self):
         """
@@ -159,7 +243,6 @@ class UserConfig:
         :return: 包含UserConfig所有属性的字典
         """
         return {
-            "uid": self.uid,
             "name": self.name,
             "token": self.token,
             "city": self.city,
@@ -167,7 +250,9 @@ class UserConfig:
             "lnt": self.lnt,
             "lat": self.lat,
             "auto_bargain": self.auto_bargain,
-            "user_id": self.user_id
+            "user_id": self.user_id,
+            "key": self.key,
+            "bar_gain_state": self.bar_gain_state.to_dict()
         }
 
 
@@ -375,4 +460,78 @@ class UserInfo:
             "have": self.have,
             "daren": self.daren,
             "usable_coupon_num": self.usable_coupon_num
+        }
+
+
+# 城市信息
+class City:
+    def __init__(self, id: int = None, address: str = None, province: str = None, city: str = None,
+                 createtime: int = None, code: int = None, status: int = None, qrcode: str = None,
+                 welcome_pic: str = None, sort: int = None, icon_img: str = None):
+        """
+        :param id: 城市ID
+        :param address: 地址（省份/城市）
+        :param province: 省份
+        :param city: 城市
+        :param createtime: 创建时间戳
+        :param code: 城市编码
+        :param status: 状态
+        :param qrcode: 二维码图片路径
+        :param welcome_pic: 欢迎图片路径
+        :param sort: 排序
+        :param icon_img: 图标图片URL
+        """
+        self.id = id
+        self.address = address
+        self.province = province
+        self.city = city
+        self.createtime = createtime
+        self.code = code
+        self.status = status
+        self.qrcode = qrcode
+        self.welcome_pic = welcome_pic
+        self.sort = sort
+        self.icon_img = icon_img
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        """
+        从字典创建City实例
+        :param data: 包含City属性的字典
+        :return: City实例
+        """
+        return cls(
+            id=data.get('id'),
+            address=data.get('address'),
+            province=data.get('province'),
+            city=data.get('city'),
+            createtime=data.get('createtime'),
+            code=data.get('code'),
+            status=data.get('status'),
+            qrcode=data.get('qrcode'),
+            welcome_pic=data.get('welcome_pic'),
+            sort=data.get('sort'),
+            icon_img=data.get('icon_img')
+        )
+
+    def __str__(self):
+        return f"City(id={self.id}, province='{self.province}', city='{self.city}', code={self.code})"
+
+    def to_dict(self):
+        """
+        将City实例转换为字典
+        :return: 包含City所有属性的字典
+        """
+        return {
+            "id": self.id,
+            "address": self.address,
+            "province": self.province,
+            "city": self.city,
+            "createtime": self.createtime,
+            "code": self.code,
+            "status": self.status,
+            "qrcode": self.qrcode,
+            "welcome_pic": self.welcome_pic,
+            "sort": self.sort,
+            "icon_img": self.icon_img
         }

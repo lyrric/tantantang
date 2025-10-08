@@ -19,7 +19,7 @@ def setup_logging():
             handlers=[
                 logging.StreamHandler(),  # 输出到控制台
                 # 如果需要输出到文件可以添加:
-                logging.FileHandler('logs/soho.log', encoding='utf-8')
+                logging.FileHandler('logs/ttt.log', encoding='utf-8')
             ]
         )
 

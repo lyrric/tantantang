@@ -14,14 +14,14 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.contrib import admin
-from django.urls import path, include
-from django.views.generic import RedirectView
+from django.urls import path
 
 from tantantang import views
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path("ttt/", include("tantantang.urls")),
-    path('', RedirectView.as_view(url='/static/user-config.html', permanent=False)),
+    path('user-configs', views.get_user_configs, name='get_user_configs'),
+    path('user-configs/create', views.create_user_config, name='create_user_config'),
+    path('user-configs/<int:user_id>/update', views.update_user_config, name='update_user_config'),
+    path('user-configs/<int:user_id>/delete', views.delete_user_config, name='delete_user_config'),
+    path('user-configs/<int:user_id>/start', views.start_bargain, name='delete_user_config'),
 ]

@@ -22,7 +22,6 @@ def generate_rq_token(url_: str, data_: Dict[str, Any], user_id: int = None, ) -
 
         # 6. 拼接待加密字符串
         plain_text = f"{salt}#{url_}-{param_string}~{date}"
-        print(plain_text)
 
         # 7. MD5加密并返回结果
         return _md5(plain_text)
@@ -48,7 +47,8 @@ def _get_rtp(url_: str, user_id: int, data_: Dict[str, Any]) -> Dict[str, Any]:
     elif url_ == "/api/user/thirds":
         # 只保留code参数
         rtp_map = {"code": rtp_map.get("code")}
-    # 其他url的处理规则需要根据实际业务补充
+    # 其他url的处理规则需要根据实际业务补充+
+
     else:
         # 默认不做特殊处理
         pass

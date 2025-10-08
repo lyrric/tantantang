@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户配置管理</title>
+    <!-- 引入 Vue.js -->
+    <script src="https://unpkg.com/vue@2/dist/vue.js"></script>
+    <!-- 引入 Element UI 样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <!-- 引入 Font Awesome 图标 -->
+    <link rel="stylesheet" href="https://fastly.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+    <!-- 引入自定义样式 -->
+    <link rel="stylesheet" href="css/user-config.css">
+    <!-- 引入 Element UI 组件库 -->
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+</head>
+<body>
+<div id="app" class="container">
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <a href="/index.html" class="navbar-brand">
+            探探糖活动平台
+        </a>
+        <div class="navbar-nav">
+            <a href="/index.html" class="nav-link">
+                🏠 首页
+            </a>
+            <a href="#" class="nav-link active">
+                👤 用户配置
+            </a>
+        </div>
+    </nav>
+
+    <!-- 主内容区 -->
+    <el-card class="mt-4" style="border-radius: 12px; border: none; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);"
+             v-loading="loading">
+        <div slot="header" class="card-header">
+            <span>用户配置管理</span>
+            <div style="display: flex; gap: 10px;">
+                <el-button class="add-address-btn" @click="openAddDialog"
+                           style="display: flex; align-items: center; gap: 5px;">
+                    <i class="fa fa-plus"></i> 新增
+                </el-button>
+                <el-button class="add-address-btn" @click="fetchUserConfigs" :disabled="loading"
+                           style="display: flex; align-items: center; gap: 5px;">
+                    <i class="fa fa-refresh"></i> 刷新
+                </el-button>
+            </div>
+        </div>
+
+        <div v-if="userConfigs.length === 0" class="empty-state">
+            <el-empty description="暂无用户配置">
+                <el-button class="add-address-btn" @click="fetchUserConfigs" slot="bottom">
+                    <i class="fa fa-refresh"></i> 刷新列表
+                </el-button>
+            </el-empty>
+        </div>
+
+        <!-- 用户配置卡片 -->
+        <div v-else class="cards-container mt-4">
+            <el-card
+                    v-for="(config, index) in userConfigs"
+                    :key="config.user_id"
+                    class="user-config-card"
+                    :style="{animationDelay: (index * 0.1) + 's'}"
+            >
+                <div>
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fa fa-user"></i> {{ config.name }}
+                        </div>
+                        <div class="auto-bargain"
+                             :class="{'status-active': config.auto_bargain, 'status-inactive': !config.auto_bargain}">
+                            {{ config.auto_bargain ? '自动砍价开启' : '自动砍价关闭' }}
+                        </div>
+                    </div>
+
+                    <div class="card-content">
+                        <div class="info-item">
+                            <i class="fa fa-id-card"></i>
+                            <span class="info-label">用户ID:</span>
+                            <span class="info-value">{{ config.user_id }}</span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fa fa-map-marker"></i>
+                            <span class="info-label">城市:</span>
+                            <span class="info-value">{{ config.city || '未设置' }}</span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fa fa-line-chart"></i>
+                            <span class="info-label">砍价状态:</span>
+                            <span class="info-value">
+                                <el-tag size="small" :type="getStatusType(config.bar_gain_state?.status)">
+                                    {{ getStatusText(config.bar_gain_state?.status) }}
+                                </el-tag>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="card-footer">
+                        <el-button size="small" class="edit-btn" @click="openEditDialog(config)" :disabled="loading"
+                                   style="display: flex; align-items: center; gap: 3px;">
+                            <i class="fa fa-edit"></i> 编辑
+                        </el-button>
+                        <el-button size="small" class="delete-btn" @click="deleteUserConfig(config.user_id)"
+                                   :disabled="loading" style="display: flex; align-items: center; gap: 3px;">
+                            <i class="fa fa-trash"></i> 删除
+                        </el-button>
+                        <el-button size="small" class="run-btn" @click="startBargain(config.user_id)"
+                                   :disabled="loading" style="display: flex; align-items: center; gap: 3px;">
+                            <i class="fa fa-play-circle"></i> 运行
+                        </el-button>
+                    </div>
+                </div>
+            </el-card>
+        </div>
+    </el-card>
+
+    <!-- 新增/编辑对话框 -->
+    <el-dialog :title="dialogTitle" :visible.sync="dialogVisible" width="90%" max-width="500px"
+               @close="handleDialogClose">
+        <el-form :model="currentConfig" label-width="80px">
+            <el-form-item label="Token">
+                <el-input v-model="currentConfig.token" placeholder="请输入Token"></el-input>
+            </el-form-item>
+            <el-form-item label="城市">
+                <el-input v-model="currentConfig.city" placeholder="请输入城市"></el-input>
+            </el-form-item>
+            <el-form-item label="SPT">
+                <el-input v-model="currentConfig.spt" placeholder="请输入SPT"></el-input>
+            </el-form-item>
+            <el-row :gutter="20">
+                <el-col :span="12">
+                    <el-form-item label="经度">
+                        <el-input v-model.number="currentConfig.lnt" placeholder="请输入经度"></el-input>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="12">
+                    <el-form-item label="纬度">
+                        <el-input v-model.number="currentConfig.lat" placeholder="请输入纬度"></el-input>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+            <el-form-item label="Key">
+                <el-input v-model="currentConfig.key" placeholder="请输入Key"></el-input>
+            </el-form-item>
+            <el-form-item label="自动砍价">
+                <el-switch v-model="currentConfig.auto_bargain"></el-switch>
+            </el-form-item>
+        </el-form>
+        <span slot="footer" class="dialog-footer">
+            <el-button @click="dialogVisible = false">取 消</el-button>
+            <el-button type="primary" @click="saveUserConfig" :loading="submitLoading">确 定</el-button>
+        </span>
+    </el-dialog>
+</div>
+
+<script>
+    new Vue({
+        el: '#app',
+        data() {
+            return {
+                userConfigs: [],
+                dialogVisible: false,
+                isEditing: false,
+                loading: false,
+                submitLoading: false,
+                currentConfig: {
+                    name: '',
+                    user_id: null,
+                    token: '',
+                    city: '',
+                    spt: '',
+                    lnt: null,
+                    lat: null,
+                    auto_bargain: false,
+                    key: ''
+                }
+            }
+        },
+        computed: {
+            dialogTitle() {
+                return this.isEditing ? '编辑用户配置' : '新增用户配置'
+            }
+        },
+        mounted() {
+            this.fetchUserConfigs()
+        },
+        methods: {
+            // 获取所有用户配置
+            async fetchUserConfigs() {
+                this.loading = true;
+                try {
+                    const response = await fetch('/ttt/user-configs')
+                    const result = await response.json()
+                    if (result.code === 200) {
+                        this.userConfigs = result.data || []
+                    } else {
+                        this.$message.error(result.msg || '获取用户配置失败')
+                    }
+                } catch (error) {
+                    this.$message.error('网络错误: ' + error.message)
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            // 打开新增对话框
+            openAddDialog() {
+                this.isEditing = false
+                this.currentConfig = {
+                    name: '',
+                    token: '',
+                    city: '',
+                    spt: '',
+                    lnt: null,
+                    lat: null,
+                    auto_bargain: false,
+                    key: ''
+                }
+                this.dialogVisible = true
+            },
+
+            // 打开编辑对话框
+            openEditDialog(config) {
+                this.isEditing = true
+                // 深拷贝避免修改原数据
+                this.currentConfig = JSON.parse(JSON.stringify(config))
+                this.dialogVisible = true
+            },
+
+            // 对话框关闭回调
+            handleDialogClose() {
+                // 可以在这里做一些清理工作
+            },
+
+            // 保存用户配置
+            async saveUserConfig() {
+                this.submitLoading = true;
+                try {
+                    let response
+                    if (this.isEditing) {
+                        // 编辑
+                        response = await fetch(`/ttt/user-configs/${this.currentConfig.user_id}/update`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(this.currentConfig)
+                        })
+                    } else {
+                        // 新增
+                        response = await fetch('/ttt/user-configs/create', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(this.currentConfig)
+                        })
+                    }
+
+                    const result = await response.json()
+                    if (result.code === 200) {
+                        this.$message.success(this.isEditing ? '编辑成功' : '新增成功')
+                        this.dialogVisible = false
+                        this.fetchUserConfigs()
+                    } else {
+                        this.$message.error(result.msg || (this.isEditing ? '编辑失败' : '新增失败'))
+                    }
+                } catch (error) {
+                    this.$message.error('网络错误: ' + error.message)
+                } finally {
+                    this.submitLoading = false;
+                }
+            },
+
+            // 删除用户配置
+            deleteUserConfig(userId) {
+                this.$confirm('此操作将永久删除该用户配置, 是否继续?', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(async () => {
+                    this.loading = true;
+                    try {
+                        const response = await fetch(`/ttt/user-configs/${userId}/delete`, {
+                            method: 'DELETE'
+                        })
+                        const result = await response.json()
+                        if (result.code === 200) {
+                            this.$message.success('删除成功')
+                            this.fetchUserConfigs()
+                        } else {
+                            this.$message.error(result.msg || '删除失败')
+                        }
+                    } catch (error) {
+                        this.$message.error('网络错误: ' + error.message)
+                    } finally {
+                        this.loading = false;
+                    }
+                }).catch(() => {
+                    this.$message.info('已取消删除')
+                })
+            },
+
+            // 立即运行砍价
+            async startBargain(userId) {
+                this.loading = true;
+                try {
+                    const response = await fetch(`/ttt/user-configs/${userId}/start`, {
+                        method: 'POST'
+                    })
+                    const result = await response.json()
+                    if (result.code === 200) {
+                        this.$message.success('已启动砍价任务')
+                    } else {
+                        this.$message.error(result.msg || '启动失败')
+                    }
+                } catch (error) {
+                    this.$message.error('网络错误: ' + error.message)
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            // 获取砍价状态文本
+            getStatusText(status) {
+                const statusMap = {
+                    1: '未开始',
+                    2: '进行中',
+                    3: '暂停',
+                    4: '已完成'
+                }
+                return statusMap[status] || '未知状态'
+            },
+
+            // 获取状态样式类型
+            getStatusType(status) {
+                switch (status) {
+                    case 1:
+                        return 'info';     // 未开始
+                    case 2:
+                        return 'success';  // 进行中
+                    case 3:
+                        return 'warning';  // 暂停
+                    case 4:
+                        return 'danger';   // 已完成
+                    default:
+                        return 'info';
+                }
+            }
+        }
+    })
+</script>
+</body>
+</html>
