@@ -51,7 +51,7 @@ async def start_one(user_config: UserConfig):
             city_count = 0
             # 确定起始页码
             start_page = start_page_num if city_index == start_city_index else 1
-            for page_num in range(start_page, 20):
+            for page_num in range(start_page, 999):
                 log.info(f"开始执行第{page_num}页")
                 activities = await ttt_http.get_activity_list(page_num, 10, city_name, token=user_config.token)
                 if len(activities) == 0:

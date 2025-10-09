@@ -5,7 +5,7 @@ import threading
 
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-
+from tantantang import ttt_http
 from tantantang.models import UserConfig, HttpResult, BarGainState
 from tantantang import scheduled_task
 from tantantang.user_config_service import (
@@ -15,6 +15,7 @@ from tantantang.user_config_service import (
     update_user_config_by_uid,
     delete_user_config_by_uid
 )
+from tantantang.exceptions import UserConfigNotFoundException
 
 
 @csrf_exempt
@@ -55,11 +56,8 @@ def update_user_config(request, user_id):
         data = json.loads(request.body)
         updated_config = UserConfig.from_dict(data)
 
-        success = update_user_config_by_uid(updated_config)
-        if success:
-            return JsonResponse(HttpResult.ok().to_dict())
-        else:
-            return JsonResponse(HttpResult.error('UserConfig not found').to_dict(), status=404)
+        update_user_config_by_uid(updated_config)
+        return JsonResponse(HttpResult.ok().to_dict())
     else:
         return JsonResponse(HttpResult.error('Method not allowed').to_dict(), status=405)
 
@@ -70,11 +68,8 @@ def delete_user_config(request, user_id):
     根据UID删除用户配置
     """
     if request.method == 'DELETE':
-        success = delete_user_config_by_uid(user_id)
-        if success:
-            return JsonResponse(HttpResult.ok().to_dict())
-        else:
-            return JsonResponse(HttpResult.error('UserConfig not found').to_dict(), status=404)
+        delete_user_config_by_uid(user_id)
+        return JsonResponse(HttpResult.ok().to_dict())
     else:
         return JsonResponse(HttpResult.error('Method not allowed').to_dict(), status=405)
 
@@ -87,4 +82,24 @@ def start_bargain(request, user_id: int):
         # 在新线程中执行任务
         thread = threading.Thread(target=lambda: asyncio.run(scheduled_task.start_one(user_config)))
         thread.start()
-    return JsonResponse(HttpResult.ok().to_dict(), status=200)
+        return JsonResponse(HttpResult.ok().to_dict(), status=200)
+    else:
+        # 使用自定义异常
+        raise UserConfigNotFoundException('UserConfig not found')
+
+
+async def get_activity_list(request, user_id: int):
+    # 获取GET请求中的参数
+    page_num = request.GET.get('page_num', 1)  # 默认值为1
+    page_size = request.GET.get('page_size', 10)  # 默认值为10
+    user_config = get_user_config_by_uid(user_id)
+    if user_config is None:
+        # 使用自定义异常
+        raise UserConfigNotFoundException('UserConfig not found')
+    
+    activities = await ttt_http.get_activity_list(
+        page_num, page_size, user_config.city, 
+        user_config.lnt, user_config.lat
+    )
+    dict_list = [activity.to_dict() for activity in activities]
+    return JsonResponse(HttpResult.ok(dict_list).to_dict())

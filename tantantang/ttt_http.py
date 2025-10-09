@@ -6,6 +6,7 @@ from aiohttp import FormData
 from aiohttp.web_fileresponse import content_type
 
 import tantantang.logging_config
+from tantantang.exceptions import BusinessException
 from tantantang.models import Activity, City, ActivityDetail
 from tantantang.models import UserInfo
 from tantantang.rq_token_util import generate_rq_token
@@ -61,10 +62,10 @@ async def get_activity_list(page_num, page_size, city, lon=None, lat=None,
                     result: list[Activity] = [Activity.from_dict(data) for data in data_list]
                     return result
                 else:
-                    raise Exception(f"获取活动列表失败 {result_dict['msg']}")
+                    raise BusinessException(f"获取活动列表失败 {result_dict['msg']}")
             else:
                 log.warn(f"获取活动列表失败 {response.reason}")
-                raise Exception(f"获取活动列表失败 {response.reason}")
+                raise BusinessException(f"获取活动列表失败 {response.reason}")
 
 
 UNMI = 6665
@@ -139,10 +140,10 @@ async def get_user_info(token, _type=1) -> UserInfo:
                 if code == 1:
                     return UserInfo.from_dict(result_dict['data'])
                 else:
-                    raise Exception(f"获取用户信息失败 {result_dict['msg']}")
+                    raise BusinessException(f"获取用户信息失败 {result_dict['msg']}")
             else:
                 log.warn(f"获取用户信息失败 {response.reason}")
-                raise Exception(f"获取用户信息失败 {response.reason}")
+                raise BusinessException(f"获取用户信息失败 {response.reason}")
 
 
 # 获取详细信息
@@ -171,10 +172,10 @@ async def get_activity_detail(token: str, activitygoods_id: int, lon: float, lat
                 if code == 1:
                     return ActivityDetail.from_dict(result_dict['data'])
                 else:
-                    raise Exception(f"获取活动详情失败 {result_dict['msg']}")
+                    raise BusinessException(f"获取活动详情失败 {result_dict['msg']}")
             else:
                 log.warn(f"获取活动详情失败 {response.reason}")
-                raise Exception(f"获取活动详情失败 {response.reason}")
+                raise BusinessException(f"获取活动详情失败 {response.reason}")
 
 
 def get_headers(token: str):
@@ -203,6 +204,6 @@ async def get_city_list() -> list[City]:
                     dicts = result_dict['data'].values()
                     return [City.from_dict(data) for data in dicts]
                 else:
-                    raise Exception(f"获取城市列表失败 {result_dict['msg']}")
+                    raise BusinessException(f"获取城市列表失败 {result_dict['msg']}")
             else:
-                raise Exception(f"获取城市列表失败 {response.reason}")
+                raise BusinessException(f"获取城市列表失败 {response.reason}")

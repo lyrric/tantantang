@@ -23,5 +23,6 @@ urlpatterns = [
     path('user-configs/create', views.create_user_config, name='create_user_config'),
     path('user-configs/<int:user_id>/update', views.update_user_config, name='update_user_config'),
     path('user-configs/<int:user_id>/delete', views.delete_user_config, name='delete_user_config'),
-    path('user-configs/<int:user_id>/start', views.start_bargain, name='delete_user_config'),
+    path('user-configs/<int:user_id>/start', views.start_bargain, name='start_bargain'),
+    path('activity-list/<int:user_id>', views.get_activity_list, name='get_activity_list'),
 ]

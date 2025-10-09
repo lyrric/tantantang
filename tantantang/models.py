@@ -23,7 +23,7 @@ class Activity:
         :param is_stop: 一般为1
         :param is_sell: 一般为1
         :param sy_store: 库存数量
-        :param is_top: 一般为0
+        :param is_top: 一般为0 是否置顶
         :param sales_volume:
         :param kj_num: 砍价次数
         :param lon: 经度
@@ -103,6 +103,40 @@ class Activity:
 
     def __str__(self):
         return f"Activity(activitygoods_id={self.activitygoods_id},title='{self.title}', price={self.price}, shop_name='{self.shop_name}, sy_store='{self.sy_store}')"
+
+    def to_dict(self):
+        """
+        将Activity实例转换为字典
+        :return: 包含Activity所有属性的字典
+        """
+        return {
+            "activitygoods_id": self.activitygoods_id,
+            "activity_id": self.activity_id,
+            "createtime": self.createtime,
+            "first_price": self.first_price,
+            "title": self.title,
+            "hot": self.hot,
+            "y_price": self.y_price,
+            "price": self.price,
+            "shop_name": self.shop_name,
+            "is_stop": self.is_stop,
+            "is_sell": self.is_sell,
+            "sy_store": self.sy_store,
+            "is_top": self.is_top,
+            "sales_volume": self.sales_volume,
+            "kj_num": self.kj_num,
+            "lon": self.lon,
+            "lat": self.lat,
+            "rank3": self.rank3,
+            "is_m_shop": self.is_m_shop,
+            "image": self.image,
+            "share_image": self.share_image,
+            "tags": self.tags,
+            "distance": self.distance,
+            "is_cut": self.is_cut,
+            "kan": self.kan,
+            "is_tag": self.is_tag
+        }
 
 
 # 砍价状态
