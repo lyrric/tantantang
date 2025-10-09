@@ -535,3 +535,341 @@ class City:
             "sort": self.sort,
             "icon_img": self.icon_img
         }
+
+
+# 商品详情类
+class Goods:
+    def __init__(self, title: str = None, tags: str = None, content: str = None, content2: str = None,
+                 content3: str = None, sell_intr: str = None, appl_stores_num: int = None, is_tag: int = None,
+                 image_url: list = None, share_image_url: list = None, images_url: list = None):
+        """
+        :param title: 商品标题
+        :param tags: 标签
+        :param content: 内容
+        :param content2: 内容2
+        :param content3: 内容3
+        :param sell_intr: 销售说明
+        :param appl_stores_num: 适用店铺数
+        :param is_tag: 标签标识
+        :param image_url: 图片URL列表
+        :param share_image_url: 分享图片URL列表
+        :param images_url: 图片URL列表
+        """
+        self.title = title
+        self.tags = tags
+        self.content = content
+        self.content2 = content2
+        self.content3 = content3
+        self.sell_intr = sell_intr
+        self.appl_stores_num = appl_stores_num
+        self.is_tag = is_tag
+        self.image_url = image_url if image_url is not None else []
+        self.share_image_url = share_image_url if share_image_url is not None else []
+        self.images_url = images_url if images_url is not None else []
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        """
+        从字典创建Goods实例
+        :param data: 包含Goods属性的字典
+        :return: Goods实例
+        """
+        return cls(
+            title=data.get('title'),
+            tags=data.get('tags'),
+            content=data.get('content'),
+            content2=data.get('content2'),
+            content3=data.get('content3'),
+            sell_intr=data.get('sell_intr'),
+            appl_stores_num=data.get('appl_stores_num'),
+            is_tag=data.get('is_tag'),
+            image_url=data.get('image_url', []),
+            share_image_url=data.get('share_image_url', []),
+            images_url=data.get('images_url', [])
+        )
+
+    def __str__(self):
+        return f"Goods(title='{self.title}', tags='{self.tags}')"
+
+    def to_dict(self):
+        """
+        将Goods实例转换为字典
+        :return: 包含Goods所有属性的字典
+        """
+        return {
+            "title": self.title,
+            "tags": self.tags,
+            "content": self.content,
+            "content2": self.content2,
+            "content3": self.content3,
+            "sell_intr": self.sell_intr,
+            "appl_stores_num": self.appl_stores_num,
+            "is_tag": self.is_tag,
+            "image_url": self.image_url,
+            "share_image_url": self.share_image_url,
+            "images_url": self.images_url
+        }
+
+
+# 商店信息类
+class Shop:
+    def __init__(self, id: int = None, shop_name: str = None, prove_image: str = None, tags: str = None,
+                 money: str = None, phone: str = None, address: str = None, lon: str = None, lat: str = None,
+                 city_id: int = None, image_url: list = None, images_url: list = None, proveimage_url: list = None):
+        """
+        :param id: 商店ID
+        :param shop_name: 商店名称
+        :param prove_image: 认证图片
+        :param tags: 标签
+        :param money: 金额
+        :param phone: 电话
+        :param address: 地址
+        :param lon: 经度
+        :param lat: 纬度
+        :param city_id: 城市ID
+        :param image_url: 图片URL列表
+        :param images_url: 图片URL列表
+        :param proveimage_url: 认证图片URL列表
+        """
+        self.id = id
+        self.shop_name = shop_name
+        self.prove_image = prove_image
+        self.tags = tags
+        self.money = money
+        self.phone = phone
+        self.address = address
+        self.lon = lon
+        self.lat = lat
+        self.city_id = city_id
+        self.image_url = image_url if image_url is not None else []
+        self.images_url = images_url if images_url is not None else []
+        self.proveimage_url = proveimage_url if proveimage_url is not None else []
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        """
+        从字典创建Shop实例
+        :param data: 包含Shop属性的字典
+        :return: Shop实例
+        """
+        return cls(
+            id=data.get('id'),
+            shop_name=data.get('shop_name'),
+            prove_image=data.get('prove_image'),
+            tags=data.get('tags'),
+            money=data.get('money'),
+            phone=data.get('phone'),
+            address=data.get('address'),
+            lon=data.get('lon'),
+            lat=data.get('lat'),
+            city_id=data.get('city_id'),
+            image_url=data.get('image_url', []),
+            images_url=data.get('images_url', []),
+            proveimage_url=data.get('proveimage_url', [])
+        )
+
+    def __str__(self):
+        return f"Shop(id={self.id}, shop_name='{self.shop_name}')"
+
+    def to_dict(self):
+        """
+        将Shop实例转换为字典
+        :return: 包含Shop所有属性的字典
+        """
+        return {
+            "id": self.id,
+            "shop_name": self.shop_name,
+            "prove_image": self.prove_image,
+            "tags": self.tags,
+            "money": self.money,
+            "phone": self.phone,
+            "address": self.address,
+            "lon": self.lon,
+            "lat": self.lat,
+            "city_id": self.city_id,
+            "image_url": self.image_url,
+            "images_url": self.images_url,
+            "proveimage_url": self.proveimage_url
+        }
+
+
+# 活动信息类
+class ActivityInfo:
+    def __init__(self, id: int = None, rank3: str = None, is_m_shop: int = None, is_sell_text: str = None,
+                 status_text: str = None):
+        """
+        :param id: 活动ID
+        :param rank3: 排名
+        :param is_m_shop: 是否主商店
+        :param is_sell_text: 销售状态文本
+        :param status_text: 状态文本
+        """
+        self.id = id
+        self.rank3 = rank3
+        self.is_m_shop = is_m_shop
+        self.is_sell_text = is_sell_text
+        self.status_text = status_text
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        """
+        从字典创建ActivityInfo实例
+        :param data: 包含ActivityInfo属性的字典
+        :return: ActivityInfo实例
+        """
+        return cls(
+            id=data.get('id'),
+            rank3=data.get('rank3'),
+            is_m_shop=data.get('is_m_shop'),
+            is_sell_text=data.get('is_sell_text'),
+            status_text=data.get('status_text')
+        )
+
+    def __str__(self):
+        return f"ActivityInfo(id={self.id}, rank3='{self.rank3}')"
+
+    def to_dict(self):
+        """
+        将ActivityInfo实例转换为字典
+        :return: 包含ActivityInfo所有属性的字典
+        """
+        return {
+            "id": self.id,
+            "rank3": self.rank3,
+            "is_m_shop": self.is_m_shop,
+            "is_sell_text": self.is_sell_text,
+            "status_text": self.status_text
+        }
+
+
+# 活动详情类
+class ActivityDetail:
+    def __init__(self, id: int = None, user_id: int = None, activity_id: int = None, goods_id: int = None,
+                 shop_id: int = None, title: str = None, y_price: str = None, price: str = None,
+                 first_price: str = None, store: int = None, sy_store: int = None, hot: int = None,
+                 is_sell: int = None, createtime: int = None, kan: int = None, goods: Goods = None,
+                 shop: Shop = None, activity: ActivityInfo = None, is_sell_text: str = None,
+                 grass: list = None, rice: float = None, is_cut: int = None):
+        """
+        :param id: ID
+        :param user_id: 用户ID
+        :param activity_id: 活动ID
+        :param goods_id: 商品ID
+        :param shop_id: 商店ID
+        :param title: 标题
+        :param y_price: 原价
+        :param price: 当前价格
+        :param first_price: 首次价格
+        :param store: 库存
+        :param sy_store: 剩余库存
+        :param hot: 热度
+        :param is_sell: 是否销售
+        :param createtime: 创建时间戳
+        :param kan: 是否可砍价
+        :param goods: 商品信息
+        :param shop: 商店信息
+        :param activity: 活动信息
+        :param is_sell_text: 销售状态文本
+        :param grass: 草稿列表
+        :param rice: 米数
+        :param is_cut: 是否已砍价
+        """
+        self.id = id
+        self.user_id = user_id
+        self.activity_id = activity_id
+        self.goods_id = goods_id
+        self.shop_id = shop_id
+        self.title = title
+        self.y_price = y_price
+        self.price = price
+        self.first_price = first_price
+        self.store = store
+        self.sy_store = sy_store
+        self.hot = hot
+        self.is_sell = is_sell
+        self.createtime = createtime
+        self.kan = kan
+        self.goods = goods
+        self.shop = shop
+        self.activity = activity
+        self.is_sell_text = is_sell_text
+        self.grass = grass if grass is not None else []
+        self.rice = rice
+        self.is_cut = is_cut
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        """
+        从字典创建ActivityDetail实例
+        :param data: 包含ActivityDetail属性的字典
+        :return: ActivityDetail实例
+        """
+        goods = None
+        if data.get('goods') is not None:
+            goods = Goods.from_dict(data.get('goods'))
+
+        shop = None
+        if data.get('shop') is not None:
+            shop = Shop.from_dict(data.get('shop'))
+
+        activity = None
+        if data.get('activity') is not None:
+            activity = ActivityInfo.from_dict(data.get('activity'))
+
+        return cls(
+            id=data.get('id'),
+            user_id=data.get('user_id'),
+            activity_id=data.get('activity_id'),
+            goods_id=data.get('goods_id'),
+            shop_id=data.get('shop_id'),
+            title=data.get('title'),
+            y_price=data.get('y_price'),
+            price=data.get('price'),
+            first_price=data.get('first_price'),
+            store=data.get('store'),
+            sy_store=data.get('sy_store'),
+            hot=data.get('hot'),
+            is_sell=data.get('is_sell'),
+            createtime=data.get('createtime'),
+            kan=data.get('kan'),
+            goods=goods,
+            shop=shop,
+            activity=activity,
+            is_sell_text=data.get('is_sell_text'),
+            grass=data.get('grass', []),
+            rice=data.get('rice'),
+            is_cut=data.get('is_cut')
+        )
+
+    def __str__(self):
+        return f"ActivityDetail(id={self.id}, title='{self.title}', price={self.price},sy_store={self.sy_store})"
+
+    def to_dict(self):
+        """
+        将ActivityDetail实例转换为字典
+        :return: 包含ActivityDetail所有属性的字典
+        """
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "activity_id": self.activity_id,
+            "goods_id": self.goods_id,
+            "shop_id": self.shop_id,
+            "title": self.title,
+            "y_price": self.y_price,
+            "price": self.price,
+            "first_price": self.first_price,
+            "store": self.store,
+            "sy_store": self.sy_store,
+            "hot": self.hot,
+            "is_sell": self.is_sell,
+            "createtime": self.createtime,
+            "kan": self.kan,
+            "goods": self.goods.to_dict() if self.goods else None,
+            "shop": self.shop.to_dict() if self.shop else None,
+            "activity": self.activity.to_dict() if self.activity else None,
+            "is_sell_text": self.is_sell_text,
+            "grass": self.grass,
+            "rice": self.rice,
+            "is_cut": self.is_cut
+        }

@@ -6,7 +6,7 @@ from aiohttp import FormData
 from aiohttp.web_fileresponse import content_type
 
 import tantantang.logging_config
-from tantantang.models import Activity, City
+from tantantang.models import Activity, City, ActivityDetail
 from tantantang.models import UserInfo
 from tantantang.rq_token_util import generate_rq_token
 
@@ -131,7 +131,7 @@ async def get_user_info(token, _type=1) -> UserInfo:
     rq_token = generate_rq_token(url, data)
     data['rqtoken'] = rq_token
     async with aiohttp.ClientSession() as session:
-        async with session.post(BASE_URL + "/api/user/getuserinfo", data=data,
+        async with session.post(BASE_URL + url, data=data,
                                 headers=get_headers(token)) as response:
             if response.ok:
                 result_dict = await response.json()
@@ -143,6 +143,38 @@ async def get_user_info(token, _type=1) -> UserInfo:
             else:
                 log.warn(f"获取用户信息失败 {response.reason}")
                 raise Exception(f"获取用户信息失败 {response.reason}")
+
+
+# 获取详细信息
+async def get_activity_detail(token: str, activitygoods_id: int, lon: float, lat: float) -> ActivityDetail:
+    """
+    :param token:
+    :param activitygoods_id:
+    :param lon:
+    :param lat:
+    :return:
+    """
+    data = {
+        "activitygoods_id": activitygoods_id,
+        "lon": lon,
+        "lat": lat,
+    }
+    url = "/api/shop/activity_detail"
+    rq_token = generate_rq_token(url, data)
+    data['rqtoken'] = rq_token
+    async with aiohttp.ClientSession() as session:
+        async with session.post(BASE_URL + url, data=data,
+                                headers=get_headers(token)) as response:
+            if response.ok:
+                result_dict = await response.json()
+                code = result_dict['code']
+                if code == 1:
+                    return ActivityDetail.from_dict(result_dict['data'])
+                else:
+                    raise Exception(f"获取活动详情失败 {result_dict['msg']}")
+            else:
+                log.warn(f"获取活动详情失败 {response.reason}")
+                raise Exception(f"获取活动详情失败 {response.reason}")
 
 
 def get_headers(token: str):
