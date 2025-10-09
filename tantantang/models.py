@@ -145,22 +145,20 @@ class BarGainState:
     砍价状态
     """
 
-    def __init__(self, user_config_id: int, status=1, city=None, page_num=None, page_size=None, current_time=None):
+    def __init__(self, status=1, city=None, page_num=None, current_time=None, remark=None):
         """
         初始化BarGainState实例
-        :param user_config_id: 用户配置ID
         :param status: 状态 1：未开始，2：进行中，3：暂停，4：已完成
         :param city: 城市名称
         :param page_num: 页码
-        :param page_size: 每页数量
         :param current_time: 当前时间
+        :param remark: 额外信息，一般为砍价失败原因
         """
-        self.user_config_id = user_config_id
         self.status = status
         self.city = city
         self.page_num = page_num
-        self.page_size = page_size
         self.current_time = current_time
+        self.remark = remark
 
     @classmethod
     def from_dict(cls, data: dict):
@@ -179,23 +177,21 @@ class BarGainState:
                 current_time = None
 
         return cls(
-            user_config_id=data.get('user_config_id'),
             status=data.get('status'),
             city=data.get('city'),
             page_num=data.get('page_num'),
-            page_size=data.get('page_size'),
-            current_time=current_time
+            current_time=current_time,
+            remark=data.get('remark')
         )
 
     @classmethod
-    def from_default(cls, user_config_id):
+    def from_default(cls):
         return cls(
-            user_config_id=user_config_id,
             status=1
         )
 
     def __str__(self):
-        return f"BarGainState(user_config_id={self.user_config_id}, status={self.status}, city='{self.city}', page_num={self.page_num}, page_size={self.page_size})"
+        return f"BarGainState(status={self.status}, city='{self.city}', page_num={self.page_num}, remark='{self.remark}')"
 
     def to_dict(self):
         """
@@ -208,12 +204,11 @@ class BarGainState:
             current_time = current_time.isoformat()
 
         return {
-            "user_config_id": self.user_config_id,
             "status": self.status,
             "city": self.city,
             "page_num": self.page_num,
-            "page_size": self.page_size,
-            "current_time": current_time
+            "current_time": current_time,
+            "remark": self.remark
         }
 
 
@@ -776,8 +771,11 @@ class ActivityInfo:
         }
 
 
-# 活动详情类
 class ActivityDetail:
+    """
+    活动详情类
+    """
+
     def __init__(self, id: int = None, user_id: int = None, activity_id: int = None, goods_id: int = None,
                  shop_id: int = None, title: str = None, y_price: str = None, price: str = None,
                  first_price: str = None, store: int = None, sy_store: int = None, hot: int = None,
@@ -907,3 +905,30 @@ class ActivityDetail:
             "rice": self.rice,
             "is_cut": self.is_cut
         }
+
+
+class MonitoringActivity:
+    """
+    监控活动类
+    """
+
+    def __init__(self, activitygoods_id: int, user_id: int, m_type: int, min_price: float, current_price: float,
+                 status: int,
+                 remark: str):
+        """
+        :param activitygoods_id: 活动商品ID
+        :param user_id: 用户id
+        :param m_type: 监控类型，1:低于某值时提醒，2:价格变化提醒
+        :param min_price: 最小价格
+        :param current_price: 当前价格
+        :param status: 状态，1：进行中，2：已结束
+        :param remark: 备注，一般为结束原因
+
+        """
+        self.activitygoods_id = activitygoods_id
+        self.user_id = user_id
+        self.m_type = m_type
+        self.min_price = min_price
+        self.current_price = current_price
+        self.status = status
+        self.remark = remark

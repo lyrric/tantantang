@@ -7,7 +7,7 @@ from aiohttp.web_fileresponse import content_type
 
 import tantantang.logging_config
 from tantantang.exceptions import BusinessException
-from tantantang.models import Activity, City, ActivityDetail
+from tantantang.models import Activity, City, ActivityDetail, HttpResult
 from tantantang.models import UserInfo
 from tantantang.rq_token_util import generate_rq_token
 
@@ -72,9 +72,10 @@ UNMI = 6665
 
 
 # 砍价
-async def bar_gain(token, user_id, user_key, activitygoods_id, yq_user_id='') -> Any | None:
+async def bar_gain(token, user_id, user_key, activitygoods_id, yq_user_id='') -> HttpResult:
     """
     :param yq_user_id: 可以为空
+    :param user_key: user_key
     :param token: token
     :param activitygoods_id: 商品id
     :param user_id 用户id
@@ -90,32 +91,31 @@ async def bar_gain(token, user_id, user_key, activitygoods_id, yq_user_id='') ->
     rq_token = generate_rq_token(url, data, user_id=user_id)
     data['rqtoken'] = rq_token
     # 过滤掉值为None的数据
-    async with aiohttp.ClientSession() as session:
-        async with session.post(BASE_URL + url,
-                                data=data,
-                                headers=get_headers(token)) as response:
-            if response.ok:
-                result_dict = await response.json()
-                code = result_dict['code']
-                if code == 1:
-                    data = result_dict['data']
-                    score = data.get('score')
-                    if score is None:
-                        log.warn(f"获取糖果数量失败，应该是user_key过期了")
-                        return None
-                    return score
+    data = {key: value for key, value in data.items() if value is not None}
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(BASE_URL + url,
+                                    data=data,
+                                    headers=get_headers(token)) as response:
+                if response.ok:
+                    result_dict = await response.json()
+                    code = result_dict['code']
+                    if code == 1:
+                        data = result_dict['data']
+                        score = data.get('score')
+                        if score is None:
+                            log.warn("获取糖果数量失败，应该是user_key过期了")
+                            return HttpResult.error("获取糖果数量失败，应该是user_key过期了")
+                        return HttpResult.ok(score)
+                    else:
+                        msg = result_dict['msg']
+                        return HttpResult.error(msg)
                 else:
-                    msg = result_dict['msg']
-                    log.error(f"砍价失败 {msg}")
-                    if '商品库存数不足' in msg:
-                        return 0
-                    if '当前砍价人数过多，请稍后砍价' in msg or '出差了' in msg:
-                        await asyncio.sleep(5)
-                        return 0
-                    return None
-            else:
-                log.warn(f"砍价失败 {response.reason}")
-                return None
+                    log.warn(f"砍价失败 {response.reason}")
+                    return HttpResult.error(response.reason)
+    except Exception as e:
+        log.warn(f"砍价失败 {e}")
+        return HttpResult.error(e.__str__())
 
 
 # 获取用户信息

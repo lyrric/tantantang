@@ -2,7 +2,9 @@ from typing import List
 
 from django_redis import get_redis_connection
 import json
-from tantantang.models import UserConfig
+
+from tantantang.exceptions import BusinessException
+from tantantang.models import UserConfig, BarGainState
 from tantantang.ttt_http import get_user_info
 
 
@@ -80,7 +82,7 @@ def update_user_config_by_uid(updated_user_config: UserConfig):
     # 先检查用户配置是否存在
     existing_config = get_user_config_by_uid(updated_user_config.user_id)
     if not existing_config:
-        return False
+        raise BusinessException("配置不存在")
 
     conn = get_redis_connection()
     key = _user_config_key()
@@ -96,6 +98,20 @@ def update_user_config_by_uid(updated_user_config: UserConfig):
 
     updated_json = json.dumps(updated_dict)
     conn.hset(key, updated_user_config.user_id, updated_json)
+    return True
+
+
+def update_user_config_bargain_state(user_id: int, bar_gain_state: BarGainState):
+    """
+    更新砍价状态
+    :param user_id: user_Id
+    :param bar_gain_state: barGainState
+    """
+    user_config = get_user_config_by_uid(user_id)
+    conn = get_redis_connection()
+    key = _user_config_key()
+    user_config.bar_gain_state = bar_gain_state
+    conn.hset(key, user_config.user_id, json.dumps(user_config.to_dict()))
     return True
 
 

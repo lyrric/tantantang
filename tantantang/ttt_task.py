@@ -1,10 +1,15 @@
+import asyncio
 import datetime
+from concurrent.futures import ThreadPoolExecutor
+
 import tantantang.logging_config
-from tantantang import user_config_service
-from tantantang.models import UserConfig
-from tantantang.models import City
 from tantantang import ttt_http
+from tantantang import user_config_service
+from tantantang.message import send_message
+from tantantang.models import UserConfig
 from tantantang.ttt_http import get_city_list
+
+thread_pool = ThreadPoolExecutor(max_workers=1)
 
 log = tantantang.logging_config.get_logger(__name__)
 
@@ -59,37 +64,52 @@ async def start_one(user_config: UserConfig):
                 activities = [activity for activity in activities if
                               activity.kan == 0 and activity.is_cut == 2 and activity.sy_store > 0]
                 for activity in activities:
-                    score = await ttt_http.bar_gain(user_config.token, user_config.user_id, user_config.key,
-                                                    activity.activitygoods_id)
-
-                    if score is None:
-                        status = 3
-                        log.info(f"自动砍价失败：{activity} {user_config}")
-                        return
-                    elif score > 0:
+                    http_result = await ttt_http.bar_gain(user_config.token, user_config.user_id, user_config.key,
+                                                          activity.activitygoods_id)
+                    if http_result.code == 200:
                         success_count += 1
                         city_count += 1
-                        tg += score
+                        tg += http_result.data
+                        log.info(
+                            f"activity_id：{activity.activity_id}, name: {activity.shop_name}，砍价完成，获得糖果:{http_result.data} 执行次数：{success_count}，共获得糖果数量：{tg}")
+                    elif ('商品库存数不足' in http_result.msg
+                          or '不能再砍啦' in http_result.msg
+                          or '信号灯超时时间已到' in http_result.msg):
+                        log.info(f"{http_result.msg}：{activity} {user_config}")
+                        continue
+                    elif ('当前砍价人数过多，请稍后砍价' in http_result.msg
+                          or '出差了' in http_result.msg):
+                        log.info(f"{http_result.msg}，等待3s秒继续：{activity} {user_config}")
+                        await asyncio.sleep(3)
                     else:
-                        # 等于0 表示砍价失败，但是可以继续执行
-                        pass
-                    log.info(
-                        f"activity_id：{activity.activity_id}, name: {activity.shop_name}，砍价完成，获得糖果:{score}")
+                        log.error(f"砍价失败：{activity} {http_result.msg}")
+                        status = 3
+                        update_bargain_state(user_config, status, city_name, page_num, remark=http_result.msg)
+                        await send_message(user_config.spt, "自动砍价异常",
+                                           f"砍价异常<br/> 错误信息：{http_result.msg} <br/>执行次数：{success_count}，获得糖果数量：{tg}")
+                        return
                 log.info(f"第{page_num}页执行完成")
             log.info(f"城市:{city.city}，执行完成，执行数量：{city_count}")
-            status = 4
+        status = 4
+        await send_message(user_config.spt, "自动砍价完成",
+                           f"自动砍价完成<br/>执行次数：{success_count} <br/>获得糖果数量：{tg}")
+        update_bargain_state(user_config, status, city_name, page_num)
     except Exception as e:
         log.error(f"自动砍价失败：{user_config.name}", exc_info=e)
         status = 3
+        await send_message(user_config.spt, "自动砍价异常",
+                           f"砍价异常<br/> 错误信息：{e} <br/>执行次数：{success_count}，获得糖果数量：{tg}")
+        update_bargain_state(user_config, status, city_name, page_num, remark=e.__str__())
     finally:
         log.info(f"name:{user_config.name}，执行完成，执行次数：{success_count}，获得糖果数量：{tg}")
-        log.info(f"保存执行进度 status:{status}, city_name:{city_name}, page_num:{page_num}")
-        update_bargain_state(user_config, status, city_name, page_num)
 
 
-def update_bargain_state(user_config: UserConfig, status: int, city: str, page_num: int):
+def update_bargain_state(user_config: UserConfig, status: int, city: str, page_num: int, remark: str = None):
+    log.info(f"保存执行进度 status:{status}, city_name:{city}, page_num:{page_num}")
     user_config.bar_gain_state.status = status
     user_config.bar_gain_state.city = city
     user_config.bar_gain_state.page_num = page_num
     user_config.bar_gain_state.current_time = datetime.datetime.now()
-    user_config_service.update_user_config_by_uid(user_config)
+    user_config.bar_gain_state.remark = remark
+    thread_pool.submit(user_config_service.update_user_config_bargain_state, user_config.user_id,
+                       user_config.bar_gain_state)

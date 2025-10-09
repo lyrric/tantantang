@@ -16,9 +16,9 @@ def test_get_city_list():
 
 
 def test_get_activity_list():
-    result = asyncio.run(ttt_http.get_activity_list(1, 10, '成都市'))
-    result_dict = [activity.__str__() for activity in result]
-    log.info(result_dict)
+    result = asyncio.run(ttt_http.get_activity_list(1, 10, '成都市', token=''))
+    # result_dict = [activity.__str__() for activity in result]
+    # log.info(result_dict)
 
 
 def test_bar_gain():
@@ -33,4 +33,10 @@ def test_get_activity_detail():
     log.info(result)
 
 
-test_get_activity_detail()
+def test_get_user_info():
+    result = asyncio.run(
+        ttt_http.get_user_info(''))
+    log.info(result)
+
+
+test_get_user_info()
