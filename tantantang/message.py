@@ -23,6 +23,7 @@ async def send_message(spt, summary, content):
             async with session.post(
                     "https://wxpusher.zjiecode.com/api/send/message/simple-push",
                     json=body_map,
+                    ssl=False,
                     timeout=aiohttp.ClientTimeout(total=30)
             ) as response:
                 result = await response.json()
