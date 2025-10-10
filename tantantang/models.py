@@ -215,8 +215,7 @@ class BarGainState:
 # 用户配置
 class UserConfig:
     def __init__(self, name: str, user_id: int = None, token: str = None, city: str = None, spt: str = None,
-                 lnt: float = None, lat: float = None,
-                 auto_bargain: bool = False, key: str = None, bar_gain_state: BarGainState = None):
+                 lnt: float = None, lat: float = None, key: str = None, bar_gain_state: BarGainState = None):
         """
         :param name: 名称
         :param token: token
@@ -224,7 +223,6 @@ class UserConfig:
         :param spt: 推送spt
         :param lnt: 纬度
         :param lat: 经度
-        :param auto_bargain: 是否自动砍价，默认为False
         :param user_id: 用户ID
         :param key: 砍价时用到的参数
         :param bar_gain_state: 砍价状态
@@ -235,7 +233,6 @@ class UserConfig:
         self.spt = spt
         self.lnt = lnt
         self.lat = lat
-        self.auto_bargain = auto_bargain
         self.user_id = user_id
         self.key = key
         self.bar_gain_state = bar_gain_state
@@ -257,7 +254,6 @@ class UserConfig:
             spt=data.get('spt'),
             lnt=data.get('lnt'),
             lat=data.get('lat'),
-            auto_bargain=data.get('auto_bargain', False),
             user_id=data.get('user_id'),
             key=data.get('key'),
             bar_gain_state=bar_gain_state
@@ -278,7 +274,6 @@ class UserConfig:
             "spt": self.spt,
             "lnt": self.lnt,
             "lat": self.lat,
-            "auto_bargain": self.auto_bargain,
             "user_id": self.user_id,
             "key": self.key,
             "bar_gain_state": self.bar_gain_state.to_dict()
@@ -907,28 +902,48 @@ class ActivityDetail:
         }
 
 
-class MonitoringActivity:
+class MonitorActivity:
     """
-    监控活动类
+    监控活动
     """
 
-    def __init__(self, activitygoods_id: int, user_id: int, m_type: int, min_price: float, current_price: float,
-                 status: int,
-                 remark: str):
+    def __init__(self, m_type: int = None, shop_name: str = None, user_id: int = None, status: int = None):
         """
-        :param activitygoods_id: 活动商品ID
-        :param user_id: 用户id
-        :param m_type: 监控类型，1:低于某值时提醒，2:价格变化提醒
-        :param min_price: 最小价格
-        :param current_price: 当前价格
-        :param status: 状态，1：进行中，2：已结束
-        :param remark: 备注，一般为结束原因
-
+        :param m_type: 监控类型，1:低于某值时，每次降价提醒
+        :param shop_name: 门店名称
+        :param user_id: user_id
+        :param status: 1:正常，2:暂停
         """
-        self.activitygoods_id = activitygoods_id
-        self.user_id = user_id
         self.m_type = m_type
-        self.min_price = min_price
-        self.current_price = current_price
+        self.shop_name = shop_name
+        self.user_id = user_id
         self.status = status
-        self.remark = remark
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        """
+        从字典创建MonitorActivity实例
+        :param data: 包含MonitorActivity属性的字典
+        :return: MonitorActivity实例
+        """
+        return cls(
+            m_type=data.get('m_type'),
+            shop_name=data.get('shop_name'),
+            user_id=data.get('user_id'),
+            status=data.get('status')
+        )
+
+    def __str__(self):
+        return f"MonitoringActivity(m_type={self.m_type}, shop_name='{self.shop_name}', user_id={self.user_id}, status={self.status})"
+
+    def to_dict(self):
+        """
+        将MonitorActivity实例转换为字典
+        :return: 包含MonitorActivity所有属性的字典
+        """
+        return {
+            "m_type": self.m_type,
+            "shop_name": self.shop_name,
+            "user_id": self.user_id,
+            "status": self.status
+        }

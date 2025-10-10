@@ -92,7 +92,6 @@ def update_user_config_by_uid(updated_user_config: UserConfig):
     existing_config.lnt = updated_user_config.lnt
     existing_config.lat = updated_user_config.lat
     existing_config.spt = updated_user_config.spt
-    existing_config.auto_bargain = updated_user_config.auto_bargain
     # 更新用户配置
     updated_dict = existing_config.to_dict()
 

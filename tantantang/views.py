@@ -6,7 +6,6 @@ import threading
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django_redis import get_redis_connection
-
 from tantantang import ttt_http
 from tantantang.exceptions import BusinessException
 from tantantang.models import UserConfig, HttpResult, BarGainState
@@ -57,8 +56,10 @@ def update_user_config(request, user_id):
     if request.method == 'PUT':
         data = json.loads(request.body)
         updated_config = UserConfig.from_dict(data)
-
         update_user_config_by_uid(updated_config)
+        start = data.get("start")
+        if start:
+            start_bargain(None, user_id)
         return JsonResponse(HttpResult.ok().to_dict())
     else:
         return JsonResponse(HttpResult.error('Method not allowed').to_dict(), status=405)
@@ -92,25 +93,38 @@ def start_bargain(request, user_id: int):
         raise BusinessException('配置不存在')
 
 
-async def get_activity_list(request, user_id: int):
-    # 获取GET请求中的参数
-    page_num = request.GET.get('page_num', 1)  # 默认值为1
-    page_size = request.GET.get('page_size', 10)  # 默认值为10
-    user_config = get_user_config_by_uid(user_id)
-    if user_config is None:
-        # 使用自定义异常
-        raise BusinessException('配置不存在')
+def get_activity_list(request, user_id: int):
+    """
+    获取砍价列表
+    """
+    if request.method == 'GET':
+        page_num = request.GET.get('page_num', 1)  # 默认值为1
+        page_size = request.GET.get('page_size', 10)  # 默认值为10
+        title = request.GET.get('title')  # 搜索key
+        user_config = get_user_config_by_uid(user_id)
+        if user_config is None:
+            # 使用自定义异常
+            raise BusinessException('配置不存在')
 
-    activities = await ttt_http.get_activity_list(
-        page_num, page_size, user_config.city,
-        user_config.lnt, user_config.lat
-    )
-    dict_list = [activity.to_dict() for activity in activities]
-    return JsonResponse(HttpResult.ok(dict_list).to_dict())
+        activities = asyncio.run(ttt_http.get_activity_list(
+            page_num, page_size, user_config.city,
+            lon=user_config.lnt, lat=user_config.lat,
+            title=title, token=user_config.token
+        ))
+        dict_list = [activity.to_dict() for activity in activities]
+        return JsonResponse(HttpResult.ok(dict_list).to_dict())
+    else:
+        return JsonResponse(HttpResult.error('Method not allowed').to_dict(), status=405)
+
+
+def create_monitor(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
 
 
 def test(request):
     conn = get_redis_connection()
     user_config = get_user_config_by_uid(1286827)
-    conn.hset("test123", "123", json.dumps(user_config.to_dict()))
+    if user_config is not None:
+        conn.hset("test123", "123", json.dumps(user_config.to_dict()))
     return JsonResponse(HttpResult.ok().to_dict())

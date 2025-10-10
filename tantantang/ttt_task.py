@@ -1,7 +1,11 @@
 import asyncio
 import datetime
+import json
 import queue
+import time
 from concurrent.futures import ThreadPoolExecutor
+
+from django_redis import get_redis_connection
 
 import tantantang.logging_config
 from tantantang import ttt_http
@@ -15,38 +19,32 @@ thread_pool = ThreadPoolExecutor(max_workers=1)
 log = tantantang.logging_config.get_logger(__name__)
 
 
-def start():
-    log.info(f"开始执行")
-    user_configs = user_config_service.get_all_user_configs()
-    user_configs = [user_config for user_config in user_configs if user_config.auto_bargain]
-    log.info(f"开始执行，共{len(user_configs)}")
-    for user_config in user_configs:
-        start_one(user_config)
-
-
 async def start_one(user_config: UserConfig):
     log.info(f"开始执行自动砍价：{user_config.name}")
-    user_config.bar_gain_state.status = 2
+
     update_bargain_state(user_config)
     task_executor = ThreadPoolExecutor(
         max_workers=1, thread_name_prefix="task_thread")
     task_queue: queue.Queue[Activity] = queue.Queue()
-    # 直接提交同步包装方法
-    task_executor.submit(sync_bargain_wrapper, task_queue, user_config)
+    cities = await get_city_list()
+    # 对城市列表按city字段进行排序
+    cities.sort(key=lambda x: x.city)
+    # 检查是否需要从上次的进度继续执行
+    start_city_index = 0
+    start_page_num = 1
+    if user_config.bar_gain_state.status in [3] and is_today(user_config.bar_gain_state.current_time):
+        # 根据进度确定起始城市和页码
+        for i, city in enumerate(cities):
+            if city.city == user_config.bar_gain_state.city:
+                start_city_index = i
+                start_page_num = user_config.bar_gain_state.page_num
+                break
+        load_history(user_config, task_queue)
     try:
-        cities = await get_city_list()
-        # 对城市列表按city字段进行排序
-        cities.sort(key=lambda x: x.city)
-        # 检查是否需要从上次的进度继续执行
-        start_city_index = 0
-        start_page_num = 1
-        if user_config.bar_gain_state.status in [3] and is_today(user_config.bar_gain_state.current_time):
-            # 根据进度确定起始城市和页码
-            for i, city in enumerate(cities):
-                if city.city == user_config.bar_gain_state.city:
-                    start_city_index = i
-                    start_page_num = user_config.bar_gain_state.page_num
-                    break
+        user_config.bar_gain_state.status = 2
+        update_bargain_state(user_config)
+        # 直接提交同步包装方法
+        task_executor.submit(sync_bargain_wrapper, task_queue, user_config)
         for city_index in range(start_city_index, len(cities)):
             city = cities[city_index]
             city_name = city.city
@@ -56,13 +54,13 @@ async def start_one(user_config: UserConfig):
             for page_num in range(start_page, 999):
                 user_config.bar_gain_state.page_num = page_num
                 # 任务数量大于20则暂时不生成任务
-                while task_queue.qsize() > 20:
+                while task_queue.qsize() > 50:
                     if is_pause(user_config):
                         do_pause(user_config, task_queue)
                         return
                     await asyncio.sleep(1)
                 log.info(f"name：{user_config.name}，开始执行，城市:{city_name}，第{page_num}页")
-                activities = await ttt_http.get_activity_list(page_num, 20, city_name, token=user_config.token)
+                activities = await ttt_http.get_activity_list(page_num, 10, city_name, token=user_config.token)
                 if len(activities) == 0:
                     break
                 activities = [activity for activity in activities if
@@ -92,16 +90,26 @@ async def start_one(user_config: UserConfig):
                            f"name:{user_config.name}，砍价异常<br/> 错误信息：{e}")
 
 
+def load_history(user_config: UserConfig, task_queue: queue.Queue):
+    conn = get_redis_connection()
+    json_data_list = conn.lpop(f'{pause_pre_fix}{user_config.user_id}', 999)
+    if json_data_list is not None:
+        for json_data in json_data_list:
+            activity = Activity.from_dict(json.loads(json_data.decode(encoding='utf-8')))
+            task_queue.put_nowait(activity)
+
+
 def sync_bargain_wrapper(task_queue: queue.Queue, user_config: UserConfig):
     asyncio.run(bargain(task_queue, user_config))
 
 
 async def bargain(task_queue: queue.Queue, user_config: UserConfig):
+    start_time = time.time()  # 记录开始时间
     tg = 0
     count = 0
     while user_config.bar_gain_state.status != 3:
         activities = []
-        for i in range(5):
+        for i in range(8):
             if not task_queue.empty():
                 activities.append(task_queue.get())
         if len(activities) > 0:
@@ -115,16 +123,17 @@ async def bargain(task_queue: queue.Queue, user_config: UserConfig):
             if user_config.bar_gain_state.status == 4:
                 ##活动遍历已完成、且队列为空，则表示已完成
                 log.info(f"name: {user_config.name}, all success, count = {count}, tg={tg}")
-                await send_message(user_config.spt, "自动砍价完成",
-                                   f"name: {user_config.name}<br/>自动砍价完成<br/>总次数: {count}<br/>总获得糖果: {tg}")
                 break
             await asyncio.sleep(1)
+    end_time = time.time()  # 记录结束时间
+    elapsed_time = end_time - start_time  # 计算耗时
+    log.info(f"name: {user_config.name}, 砍价任务结束，总耗时: {elapsed_time:.2f}秒")
     if user_config.bar_gain_state.status == 3:
         await send_message(user_config.spt, "自动砍价异常",
-                           f"name: {user_config.name}<br/>自动砍价异常<br/>原因：{user_config.bar_gain_state.remark}<br/>总次数: {count}<br/>累计获得糖果: {tg}")
+                           f"name: {user_config.name}<br/>自动砍价异常<br/>原因：{user_config.bar_gain_state.remark}<br/>总次数: {count}<br/>累计获得糖果: {tg}<br/>执行时间: {elapsed_time:.2f}秒")
     else:
         await send_message(user_config.spt, "自动砍价完成",
-                           f"name: {user_config.name}<br/>自动砍价完成<br/>总次数: {count}<br/>累计获得糖果: {tg}")
+                           f"name: {user_config.name}<br/>自动砍价完成<br/>总次数: {count}<br/>累计获得糖果: {tg}<br/>执行时间: {elapsed_time:.2f}秒")
 
 
 async def bargain_one(user_config: UserConfig, activity: Activity, num: int = 1) -> int:
@@ -143,6 +152,7 @@ async def bargain_one(user_config: UserConfig, activity: Activity, num: int = 1)
         return http_result.data
     elif ('商品库存数不足' in http_result.msg
           or '不能再砍啦' in http_result.msg
+          or '每个商品一天只能砍一次哦' in http_result.msg
     ):
         log.info(f"name:{user_config.name}，{http_result.msg}：{activity} {user_config}")
         return 0
@@ -175,12 +185,25 @@ def is_pause(user_config: UserConfig) -> bool:
     return user_config.bar_gain_state.status == 3
 
 
+pause_pre_fix = "ttt:pause:"
+
+
 def do_pause(user_config: UserConfig, task_queue: queue.Queue[Activity]):
     ##保存当前状态
     log.info(f"name:{user_config.name} 砍价异常, remark={user_config.bar_gain_state.remark},开始处理暂停策略")
+    update_bargain_state(user_config)
     log.info(
         f"name:{user_config.name} 当前城市：{user_config.bar_gain_state.city}，当前pageNum：{user_config.bar_gain_state.page_num}，queue剩余数量：{task_queue.qsize()}")
-    pass
+    if task_queue.empty():
+        log.info(f"name:{user_config.name} 暂停策略：当前队列为空")
+        return
+    data = []
+    while not task_queue.empty():
+        activity = task_queue.get()
+        data.append(json.dumps(activity.to_dict()))
+    conn = get_redis_connection()
+    conn.lpush(f"{pause_pre_fix}{user_config.user_id}", *data)
+    log.info(f"name:{user_config.name} save task_queue success, size: {len(data)}")
 
 
 def update_bargain_state(user_config: UserConfig):

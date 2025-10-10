@@ -23,5 +23,5 @@ from tantantang import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("ttt/", include("tantantang.urls")),
-    path('', RedirectView.as_view(url='/static/user-config.html', permanent=False)),
+    #path('', RedirectView.as_view(url='/static/user-config.html', permanent=False)),
 ]

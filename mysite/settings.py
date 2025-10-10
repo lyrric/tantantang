@@ -26,10 +26,14 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/5.2/howto/static-files/
+
+STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     BASE_DIR / "static",  # 项目根目录下的static文件夹
 ]
-STATIC_URL = '/static/'
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -57,7 +61,7 @@ ROOT_URLCONF = 'mysite.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        #'DIRS': [BASE_DIR / "static"],  # 添加static目录作为模板目录
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -124,11 +128,6 @@ TIME_ZONE = 'Asia/Shanghai'
 USE_I18N = True
 
 USE_TZ = True
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
-
-STATIC_URL = 'static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

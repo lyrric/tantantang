@@ -1,9 +1,4 @@
-import asyncio
-from typing import Any
-
 import aiohttp
-from aiohttp import FormData
-from aiohttp.web_fileresponse import content_type
 
 import tantantang.logging_config
 from tantantang.exceptions import BusinessException
@@ -54,6 +49,7 @@ async def get_activity_list(page_num, page_size, city, lon=None, lat=None,
         async with session.post(BASE_URL + url,
                                 data=data,
                                 ssl=False,
+                                timeout=aiohttp.ClientTimeout(total=30),
                                 headers=get_headers(token)) as response:
             if response.ok:
                 result_dict = await response.json()
@@ -98,6 +94,7 @@ async def bar_gain(token, user_id, user_key, activitygoods_id, yq_user_id='') ->
             async with session.post(BASE_URL + url,
                                     data=data,
                                     ssl=False,
+                                    timeout=aiohttp.ClientTimeout(total=30),
                                     headers=get_headers(token)) as response:
                 if response.ok:
                     result_dict = await response.json()
@@ -134,7 +131,9 @@ async def get_user_info(token, _type=1) -> UserInfo:
     rq_token = generate_rq_token(url, data)
     data['rqtoken'] = rq_token
     async with aiohttp.ClientSession() as session:
-        async with session.post(BASE_URL + url, data=data, ssl=False,
+        async with session.post(BASE_URL + url, data=data,
+                                ssl=False,
+                                timeout=aiohttp.ClientTimeout(total=30),
                                 headers=get_headers(token)) as response:
             if response.ok:
                 result_dict = await response.json()
@@ -166,7 +165,9 @@ async def get_activity_detail(token: str, activitygoods_id: int, lon: float, lat
     rq_token = generate_rq_token(url, data)
     data['rqtoken'] = rq_token
     async with aiohttp.ClientSession() as session:
-        async with session.post(BASE_URL + url, data=data, ssl=False,
+        async with session.post(BASE_URL + url, data=data,
+                                ssl=False,
+                                timeout=aiohttp.ClientTimeout(total=30),
                                 headers=get_headers(token)) as response:
             if response.ok:
                 result_dict = await response.json()
@@ -198,7 +199,9 @@ def get_headers(token: str):
 
 async def get_city_list() -> list[City]:
     async with aiohttp.ClientSession() as session:
-        async with session.post(BASE_URL + "/api/index/get_city_list", ssl=False) as response:
+        async with session.post(BASE_URL + "/api/index/get_city_list",
+                                timeout=aiohttp.ClientTimeout(total=30),
+                                ssl=False) as response:
             if response.ok:
                 result_dict = await response.json()
                 code = result_dict['code']

@@ -178,16 +178,6 @@ body {
     color: #f56c6c;
 }
 
-.auto-bargain {
-    display: inline-block;
-    padding: 3px 8px;
-    border-radius: 10px;
-    font-size: 0.8rem;
-    font-weight: 500;
-    background-color: #d9ecff;
-    color: #409eff;
-}
-
 .card-footer {
     display: flex;
     justify-content: space-between;

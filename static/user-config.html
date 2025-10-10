@@ -19,15 +19,15 @@
 <div id="app" class="container">
     <!-- 导航栏 -->
     <nav class="navbar">
-        <a href="/index.html" class="navbar-brand">
+        <a href="/user-config.html" class="navbar-brand">
             探探糖活动平台
         </a>
         <div class="navbar-nav">
-            <a href="/index.html" class="nav-link">
-                🏠 首页
+            <a href="user-config.html" class="nav-link active">
+                🏠 用户配置
             </a>
-            <a href="#" class="nav-link active">
-                👤 用户配置
+            <a href="activity-list.html" class="nav-link">
+                🎁 活动列表
             </a>
         </div>
     </nav>
@@ -69,10 +69,6 @@
                     <div class="card-header">
                         <div class="card-title">
                             <i class="fa fa-user"></i> {{ config.name }}
-                        </div>
-                        <div class="auto-bargain"
-                             :class="{'status-active': config.auto_bargain, 'status-inactive': !config.auto_bargain}">
-                            {{ config.auto_bargain ? '自动砍价开启' : '自动砍价关闭' }}
                         </div>
                     </div>
 
@@ -145,13 +141,12 @@
             <el-form-item label="Key">
                 <el-input v-model="currentConfig.key" placeholder="请输入Key"></el-input>
             </el-form-item>
-            <el-form-item label="自动砍价">
-                <el-switch v-model="currentConfig.auto_bargain"></el-switch>
-            </el-form-item>
         </el-form>
         <span slot="footer" class="dialog-footer">
             <el-button @click="dialogVisible = false">取 消</el-button>
             <el-button type="primary" @click="saveUserConfig" :loading="submitLoading">确 定</el-button>
+            <el-button v-if="isEditing" type="success" @click="saveUserConfigAndRun"
+                       :loading="submitLoading">保存并运行</el-button>
         </span>
     </el-dialog>
 </div>
@@ -174,7 +169,6 @@
                     spt: '',
                     lnt: null,
                     lat: null,
-                    auto_bargain: false,
                     key: ''
                 }
             }
@@ -216,7 +210,6 @@
                     spt: '',
                     lnt: null,
                     lat: null,
-                    auto_bargain: false,
                     key: ''
                 }
                 this.dialogVisible = true
@@ -237,17 +230,33 @@
 
             // 保存用户配置
             async saveUserConfig() {
+                await this.saveUserConfigInternal(false);
+            },
+
+            // 保存用户配置并运行
+            async saveUserConfigAndRun() {
+                await this.saveUserConfigInternal(true);
+            },
+
+            // 保存用户配置的内部方法
+            async saveUserConfigInternal(start) {
                 this.submitLoading = true;
                 try {
                     let response
                     if (this.isEditing) {
+                        // 添加start参数到currentConfig
+                        const configToSend = {
+                            ...this.currentConfig,
+                            start: start
+                        };
+
                         // 编辑
                         response = await fetch(`/ttt/user-configs/${this.currentConfig.user_id}/update`, {
                             method: 'PUT',
                             headers: {
                                 'Content-Type': 'application/json'
                             },
-                            body: JSON.stringify(this.currentConfig)
+                            body: JSON.stringify(configToSend)
                         })
                     } else {
                         // 新增
