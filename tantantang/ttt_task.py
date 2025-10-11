@@ -147,9 +147,15 @@ async def bargain_one(user_config: UserConfig, activity: Activity, num: int = 1)
     http_result = await ttt_http.bar_gain(user_config.token, user_config.user_id, user_config.key,
                                           activity.activitygoods_id)
     if http_result.code == 200:
-        log.info(
-            f"name:{user_config.name}，activity_id：{activity.activity_id}, name: {activity.shop_name}，砍价完成，获得糖果:{http_result.data}")
-        return http_result.data
+        if http_result.data == 0:
+            log.warning(f"name:{user_config.name} 砍价完成，但是没有获取到糖果，应该是key过期了")
+            user_config.bar_gain_state.status = 3
+            user_config.bar_gain_state.remark = '砍价完成，但是没有获取到糖果，应该是key过期了'
+            return 0
+        else:
+            log.info(
+                f"name:{user_config.name}，activity_id：{activity.activity_id}, name: {activity.shop_name}，砍价完成，获得糖果:{http_result.data}")
+            return http_result.data
     elif ('商品库存数不足' in http_result.msg
           or '不能再砍啦' in http_result.msg
           or '每个商品一天只能砍一次哦' in http_result.msg
