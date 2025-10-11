@@ -3,3 +3,4 @@ asyncio==4.0.0
 aiohttp==3.12.15
 apscheduler==3.11.0
 django-redis==6.0.0
+WhiteNoise==6.11.0
