@@ -80,7 +80,7 @@ class Activity:
             title=data.get('title'),
             hot=data.get('hot'),
             y_price=data.get('y_price'),
-            price=data.get('price'),
+            price=float(data.get('price')),
             shop_name=data.get('shop_name'),
             is_stop=data.get('is_stop'),
             is_sell=data.get('is_sell'),
@@ -907,17 +907,24 @@ class MonitorActivity:
     监控活动
     """
 
-    def __init__(self, m_type: int = None, shop_name: str = None, user_id: int = None, status: int = None):
+    def __init__(self, m_type: int = None, shop_name: str = None, user_id: int = None, status: int = None,
+                 threshold_price: float = None, m_id: int = None, username: str = None):
         """
         :param m_type: 监控类型，1:低于某值时，每次降价提醒
         :param shop_name: 门店名称
         :param user_id: user_id
         :param status: 1:正常，2:暂停
+        :param threshold_price: 价格阈值
+        :param m_id: 监控活动ID 主键
+        :param username: 用户名
         """
         self.m_type = m_type
         self.shop_name = shop_name
         self.user_id = user_id
         self.status = status
+        self.threshold_price = float(threshold_price)
+        self.m_id = m_id
+        self.username = username
 
     @classmethod
     def from_dict(cls, data: dict):
@@ -930,11 +937,14 @@ class MonitorActivity:
             m_type=data.get('m_type'),
             shop_name=data.get('shop_name'),
             user_id=data.get('user_id'),
-            status=data.get('status')
+            status=data.get('status'),
+            threshold_price=float(data.get('threshold_price')),
+            m_id=data.get('m_id'),
+            username=data.get('username')
         )
 
     def __str__(self):
-        return f"MonitoringActivity(m_type={self.m_type}, shop_name='{self.shop_name}', user_id={self.user_id}, status={self.status})"
+        return f"MonitoringActivity(m_type={self.m_type}, shop_name='{self.shop_name}', user_id={self.user_id}, status={self.status}, threshold_price={self.threshold_price}, m_id={self.m_id}, username='{self.username}')"
 
     def to_dict(self):
         """
@@ -945,5 +955,8 @@ class MonitorActivity:
             "m_type": self.m_type,
             "shop_name": self.shop_name,
             "user_id": self.user_id,
-            "status": self.status
+            "status": self.status,
+            "threshold_price": self.threshold_price,
+            "m_id": self.m_id,
+            "username": self.username
         }

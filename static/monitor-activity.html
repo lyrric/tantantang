@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>用户配置管理</title>
+    <title>监控活动管理</title>
     <!-- 引入 Vue.js -->
     <script src="https://unpkg.com/vue@2/dist/vue.js"></script>
     <!-- 引入 Element UI 样式 -->
     <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
     <!-- 引入 Font Awesome 图标 -->
     <link rel="stylesheet" href="https://fastly.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
-    <!-- 引入自定义样式 -->
-    <link rel="stylesheet" href="css/user-config.css">
     <!-- 引入 Element UI 组件库 -->
     <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <!-- 引入监控活动管理页面样式 -->
+    <link rel="stylesheet" href="css/monitor-activity.css">
 </head>
 <body>
 <div id="app" class="container">
@@ -23,13 +23,13 @@
             探探糖活动平台
         </a>
         <div class="navbar-nav">
-            <a href="user-config.html" class="nav-link active">
+            <a href="user-config.html" class="nav-link">
                 🏠 用户配置
             </a>
             <a href="activity-list.html" class="nav-link">
                 🎁 活动列表
             </a>
-            <a href="monitor-activity.html" class="nav-link">
+            <a href="monitor-activity.html" class="nav-link active">
                 📊 活动监控
             </a>
         </div>
@@ -39,76 +39,78 @@
     <el-card class="mt-4" style="border-radius: 12px; border: none; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);"
              v-loading="loading">
         <div slot="header" class="card-header">
-            <span>用户配置管理</span>
+            <span>监控活动管理</span>
             <div style="display: flex; gap: 10px;">
-                <el-button class="add-address-btn" @click="openAddDialog"
-                           style="display: flex; align-items: center; gap: 5px;">
-                    <i class="fa fa-plus"></i> 新增
-                </el-button>
-                <el-button class="add-address-btn" @click="fetchUserConfigs" :disabled="loading"
+                <el-button class="add-address-btn" @click="fetchMonitorActivities" :disabled="loading"
                            style="display: flex; align-items: center; gap: 5px;">
                     <i class="fa fa-refresh"></i> 刷新
                 </el-button>
             </div>
         </div>
 
-        <div v-if="userConfigs.length === 0" class="empty-state">
-            <el-empty description="暂无用户配置">
-                <el-button class="add-address-btn" @click="fetchUserConfigs" slot="bottom">
+        <div v-if="monitorActivities.length === 0" class="empty-state">
+            <el-empty description="暂无监控活动">
+                <el-button class="add-address-btn" @click="fetchMonitorActivities" slot="bottom">
                     <i class="fa fa-refresh"></i> 刷新列表
                 </el-button>
             </el-empty>
         </div>
 
-        <!-- 用户配置卡片 -->
+        <!-- 监控活动卡片 -->
         <div v-else class="cards-container mt-4">
             <el-card
-                    v-for="(config, index) in userConfigs"
-                    :key="config.user_id"
+                    v-for="(activity, index) in monitorActivities"
+                    :key="activity.m_id"
                     class="user-config-card"
                     :style="{animationDelay: (index * 0.1) + 's'}"
             >
                 <div>
                     <div class="card-header">
                         <div class="card-title">
-                            <i class="fa fa-user"></i> {{ config.name }}
+                            <i class="fa fa-bell"></i> {{ activity.shop_name }}
                         </div>
                     </div>
 
                     <div class="card-content">
                         <div class="info-item">
                             <i class="fa fa-id-card"></i>
-                            <span class="info-label">用户ID:</span>
-                            <span class="info-value">{{ config.user_id }}</span>
+                            <span class="info-label">活动ID:</span>
+                            <span class="info-value">{{ activity.m_id }}</span>
                         </div>
                         <div class="info-item">
-                            <i class="fa fa-map-marker"></i>
-                            <span class="info-label">城市:</span>
-                            <span class="info-value">{{ config.city || '未设置' }}</span>
+                            <i class="fa fa-user"></i>
+                            <span class="info-label">用户名:</span>
+                            <span class="info-value">{{ activity.username }}</span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fa fa-tag"></i>
+                            <span class="info-label">监控类型:</span>
+                            <span class="info-value">{{ getMonitorTypeText(activity.m_type) }}</span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fa fa-usd"></i>
+                            <span class="info-label">价格阈值:</span>
+                            <span class="info-value">{{ activity.threshold_price }}</span>
                         </div>
                         <div class="info-item">
                             <i class="fa fa-line-chart"></i>
-                            <span class="info-label">砍价状态:</span>
+                            <span class="info-label">状态:</span>
                             <span class="info-value">
-                                <el-tag size="small" :type="getStatusType(config.bar_gain_state?.status)">
-                                    {{ getStatusText(config.bar_gain_state?.status) }}
+                                <el-tag size="small" :type="getStatusType(activity.status)">
+                                    {{ getStatusText(activity.status) }}
                                 </el-tag>
                             </span>
                         </div>
                     </div>
 
                     <div class="card-footer">
-                        <el-button size="small" class="edit-btn" @click="openEditDialog(config)" :disabled="loading"
+                        <el-button size="small" class="edit-btn" @click="openEditDialog(activity)" :disabled="loading"
                                    style="display: flex; align-items: center; gap: 3px;">
                             <i class="fa fa-edit"></i> 编辑
                         </el-button>
-                        <el-button size="small" class="delete-btn" @click="deleteUserConfig(config.user_id)"
+                        <el-button size="small" class="delete-btn" @click="deleteMonitorActivity(activity.m_id)"
                                    :disabled="loading" style="display: flex; align-items: center; gap: 3px;">
                             <i class="fa fa-trash"></i> 删除
-                        </el-button>
-                        <el-button size="small" class="run-btn" @click="startBargain(config.user_id)"
-                                   :disabled="loading" style="display: flex; align-items: center; gap: 3px;">
-                            <i class="fa fa-play-circle"></i> 运行
                         </el-button>
                     </div>
                 </div>
@@ -119,37 +121,31 @@
     <!-- 新增/编辑对话框 -->
     <el-dialog :title="dialogTitle" :visible.sync="dialogVisible" width="90%" max-width="500px"
                @close="handleDialogClose">
-        <el-form :model="currentConfig" label-width="80px">
-            <el-form-item label="Token">
-                <el-input v-model="currentConfig.token" placeholder="请输入Token"></el-input>
+        <el-form :model="currentActivity" label-width="100px">
+            <el-form-item v-if="!isEditing" label="监控类型">
+                <el-select v-model="currentActivity.m_type" placeholder="请选择监控类型">
+                    <el-option label="低于某值时提醒" :value="1"></el-option>
+                </el-select>
             </el-form-item>
-            <el-form-item label="城市">
-                <el-input v-model="currentConfig.city" placeholder="请输入城市"></el-input>
+            <el-form-item v-if="!isEditing" label="门店名称">
+                <el-input v-model="currentActivity.shop_name" placeholder="请输入门店名称"></el-input>
             </el-form-item>
-            <el-form-item label="SPT">
-                <el-input v-model="currentConfig.spt" placeholder="请输入SPT"></el-input>
+            <el-form-item v-if="!isEditing" label="用户ID">
+                <el-input v-model.number="currentActivity.user_id" placeholder="请输入用户ID"></el-input>
             </el-form-item>
-            <el-row :gutter="20">
-                <el-col :span="12">
-                    <el-form-item label="经度">
-                        <el-input v-model.number="currentConfig.lnt" placeholder="请输入经度"></el-input>
-                    </el-form-item>
-                </el-col>
-                <el-col :span="12">
-                    <el-form-item label="纬度">
-                        <el-input v-model.number="currentConfig.lat" placeholder="请输入纬度"></el-input>
-                    </el-form-item>
-                </el-col>
-            </el-row>
-            <el-form-item label="Key">
-                <el-input v-model="currentConfig.key" placeholder="请输入Key"></el-input>
+            <el-form-item label="价格阈值">
+                <el-input v-model.number="currentActivity.threshold_price" placeholder="请输入价格阈值"></el-input>
+            </el-form-item>
+            <el-form-item label="状态">
+                <el-select v-model="currentActivity.status" placeholder="请选择状态">
+                    <el-option label="正常" :value="1"></el-option>
+                    <el-option label="暂停" :value="2"></el-option>
+                </el-select>
             </el-form-item>
         </el-form>
         <span slot="footer" class="dialog-footer">
             <el-button @click="dialogVisible = false">取 消</el-button>
-            <el-button type="primary" @click="saveUserConfig" :loading="submitLoading">确 定</el-button>
-            <el-button v-if="isEditing" type="success" @click="saveUserConfigAndRun"
-                       :loading="submitLoading">保存并运行</el-button>
+            <el-button type="primary" @click="saveMonitorActivity" :loading="submitLoading">确 定</el-button>
         </span>
     </el-dialog>
 </div>
@@ -159,42 +155,39 @@
         el: '#app',
         data() {
             return {
-                userConfigs: [],
+                monitorActivities: [],
                 dialogVisible: false,
                 isEditing: false,
                 loading: false,
                 submitLoading: false,
-                currentConfig: {
-                    name: '',
+                currentActivity: {
+                    m_type: 1,
+                    shop_name: '',
                     user_id: null,
-                    token: '',
-                    city: '',
-                    spt: '',
-                    lnt: null,
-                    lat: null,
-                    key: ''
+                    status: 1,
+                    threshold_price: null
                 }
             }
         },
         computed: {
             dialogTitle() {
-                return this.isEditing ? '编辑用户配置' : '新增用户配置'
+                return this.isEditing ? '编辑监控活动' : '新增监控活动'
             }
         },
         mounted() {
-            this.fetchUserConfigs()
+            this.fetchMonitorActivities()
         },
         methods: {
-            // 获取所有用户配置
-            async fetchUserConfigs() {
+            // 获取所有监控活动
+            async fetchMonitorActivities() {
                 this.loading = true;
                 try {
-                    const response = await fetch('/ttt/user-configs')
+                    const response = await fetch('/ttt/monitor-activities')
                     const result = await response.json()
                     if (result.code === 200) {
-                        this.userConfigs = result.data || []
+                        this.monitorActivities = result.data || []
                     } else {
-                        this.$message.error(result.msg || '获取用户配置失败')
+                        this.$message.error(result.msg || '获取监控活动失败')
                     }
                 } catch (error) {
                     this.$message.error('网络错误: ' + error.message)
@@ -206,23 +199,21 @@
             // 打开新增对话框
             openAddDialog() {
                 this.isEditing = false
-                this.currentConfig = {
-                    name: '',
-                    token: '',
-                    city: '',
-                    spt: '',
-                    lnt: null,
-                    lat: null,
-                    key: ''
+                this.currentActivity = {
+                    m_type: 1,
+                    shop_name: '',
+                    user_id: null,
+                    status: 1,
+                    threshold_price: null
                 }
                 this.dialogVisible = true
             },
 
             // 打开编辑对话框
-            openEditDialog(config) {
+            openEditDialog(activity) {
                 this.isEditing = true
                 // 深拷贝避免修改原数据
-                this.currentConfig = JSON.parse(JSON.stringify(config))
+                this.currentActivity = JSON.parse(JSON.stringify(activity))
                 this.dialogVisible = true
             },
 
@@ -231,44 +222,28 @@
                 // 可以在这里做一些清理工作
             },
 
-            // 保存用户配置
-            async saveUserConfig() {
-                await this.saveUserConfigInternal(false);
-            },
-
-            // 保存用户配置并运行
-            async saveUserConfigAndRun() {
-                await this.saveUserConfigInternal(true);
-            },
-
-            // 保存用户配置的内部方法
-            async saveUserConfigInternal(start) {
+            // 保存监控活动
+            async saveMonitorActivity() {
                 this.submitLoading = true;
                 try {
                     let response
                     if (this.isEditing) {
-                        // 添加start参数到currentConfig
-                        const configToSend = {
-                            ...this.currentConfig,
-                            start: start
-                        };
-
                         // 编辑
-                        response = await fetch(`/ttt/user-configs/${this.currentConfig.user_id}/update`, {
+                        response = await fetch(`/ttt/monitor-activities/${this.currentActivity.m_id}/update`, {
                             method: 'PUT',
                             headers: {
                                 'Content-Type': 'application/json'
                             },
-                            body: JSON.stringify(configToSend)
+                            body: JSON.stringify(this.currentActivity)
                         })
                     } else {
                         // 新增
-                        response = await fetch('/ttt/user-configs/create', {
+                        response = await fetch('/ttt/monitor-activities/create', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
                             },
-                            body: JSON.stringify(this.currentConfig)
+                            body: JSON.stringify(this.currentActivity)
                         })
                     }
 
@@ -276,7 +251,7 @@
                     if (result.code === 200) {
                         this.$message.success(this.isEditing ? '编辑成功' : '新增成功')
                         this.dialogVisible = false
-                        this.fetchUserConfigs()
+                        this.fetchMonitorActivities()
                     } else {
                         this.$message.error(result.msg || (this.isEditing ? '编辑失败' : '新增失败'))
                     }
@@ -287,22 +262,22 @@
                 }
             },
 
-            // 删除用户配置
-            deleteUserConfig(userId) {
-                this.$confirm('此操作将永久删除该用户配置, 是否继续?', '提示', {
+            // 删除监控活动
+            deleteMonitorActivity(mId) {
+                this.$confirm('此操作将永久删除该监控活动, 是否继续?', '提示', {
                     confirmButtonText: '确定',
                     cancelButtonText: '取消',
                     type: 'warning'
                 }).then(async () => {
                     this.loading = true;
                     try {
-                        const response = await fetch(`/ttt/user-configs/${userId}/delete`, {
+                        const response = await fetch(`/ttt/monitor-activities/${mId}/delete`, {
                             method: 'DELETE'
                         })
                         const result = await response.json()
                         if (result.code === 200) {
                             this.$message.success('删除成功')
-                            this.fetchUserConfigs()
+                            this.fetchMonitorActivities()
                         } else {
                             this.$message.error(result.msg || '删除失败')
                         }
@@ -316,33 +291,19 @@
                 })
             },
 
-            // 立即运行砍价
-            async startBargain(userId) {
-                this.loading = true;
-                try {
-                    const response = await fetch(`/ttt/user-configs/${userId}/start`, {
-                        method: 'POST'
-                    })
-                    const result = await response.json()
-                    if (result.code === 200) {
-                        this.$message.success('已启动砍价任务')
-                    } else {
-                        this.$message.error(result.msg || '启动失败')
-                    }
-                } catch (error) {
-                    this.$message.error('网络错误: ' + error.message)
-                } finally {
-                    this.loading = false;
+            // 获取监控类型文本
+            getMonitorTypeText(type) {
+                const typeMap = {
+                    1: '低于某值时提醒'
                 }
+                return typeMap[type] || '未知类型'
             },
 
-            // 获取砍价状态文本
+            // 获取状态文本
             getStatusText(status) {
                 const statusMap = {
-                    1: '未开始',
-                    2: '进行中',
-                    3: '暂停',
-                    4: '已完成'
+                    1: '正常',
+                    2: '暂停'
                 }
                 return statusMap[status] || '未知状态'
             },
@@ -351,13 +312,9 @@
             getStatusType(status) {
                 switch (status) {
                     case 1:
-                        return 'info';     // 未开始
+                        return 'success';  // 正常
                     case 2:
-                        return 'success';  // 进行中
-                    case 3:
                         return 'warning';  // 暂停
-                    case 4:
-                        return 'danger';   // 已完成
                     default:
                         return 'info';
                 }

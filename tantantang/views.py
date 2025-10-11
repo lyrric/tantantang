@@ -1,15 +1,21 @@
 import asyncio
 import json
-import time
 import threading
 
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django_redis import get_redis_connection
+
 from tantantang import ttt_http
-from tantantang.exceptions import BusinessException
-from tantantang.models import UserConfig, HttpResult, BarGainState
 from tantantang import ttt_task
+from tantantang.exceptions import BusinessException
+from tantantang.models import UserConfig, HttpResult, BarGainState, MonitorActivity
+from tantantang.monitor_activity_service import (
+    add_monitor_activity,
+    get_all_monitor_activities,
+    update_monitor_activity_by_id,
+    delete_monitor_activity_by_id
+)
 from tantantang.user_config_service import (
     add_user_config,
     get_all_user_configs,
@@ -62,7 +68,7 @@ def update_user_config(request, user_id):
             start_bargain(None, user_id)
         return JsonResponse(HttpResult.ok().to_dict())
     else:
-        return JsonResponse(HttpResult.error('Method not allowed').to_dict(), status=405)
+        return JsonResponse(HttpResult.error('Method not允许').to_dict(), status=405)
 
 
 @csrf_exempt
@@ -117,9 +123,66 @@ def get_activity_list(request, user_id: int):
         return JsonResponse(HttpResult.error('Method not allowed').to_dict(), status=405)
 
 
-def create_monitor(request):
+@csrf_exempt
+def create_monitor_activity(request):
+    """
+    创建监控活动
+    """
     if request.method == 'POST':
         data = json.loads(request.body)
+        monitor_activity = MonitorActivity.from_dict(data)
+        m_id = add_monitor_activity(monitor_activity)
+        return JsonResponse(HttpResult.ok({"m_id": m_id}).to_dict())
+    else:
+        return JsonResponse(HttpResult.error('Method not allowed').to_dict(), status=405)
+
+
+def get_monitor_activities(request):
+    """
+    获取所有监控活动
+    """
+    if request.method == 'GET':
+        monitor_activities = get_all_monitor_activities()
+        activities_data = []
+        for activity in monitor_activities:
+            activities_data.append(activity.to_dict())
+        return JsonResponse(HttpResult.ok(activities_data).to_dict())
+    else:
+        return JsonResponse(HttpResult.error('Method not allowed').to_dict(), status=405)
+
+
+@csrf_exempt
+def update_monitor_activity(request, m_id):
+    """
+    根据ID更新监控活动
+    """
+    if request.method == 'PUT':
+        data = json.loads(request.body)
+        # 确保URL中的m_id与数据中的m_id一致
+        data['m_id'] = m_id
+        updated_activity = MonitorActivity.from_dict(data)
+        success = update_monitor_activity_by_id(updated_activity)
+        if success:
+            return JsonResponse(HttpResult.ok().to_dict())
+        else:
+            return JsonResponse(HttpResult.error('监控活动不存在').to_dict(), status=404)
+    else:
+        return JsonResponse(HttpResult.error('Method not allowed').to_dict(), status=405)
+
+
+@csrf_exempt
+def delete_monitor_activity(request, m_id):
+    """
+    根据ID删除监控活动
+    """
+    if request.method == 'DELETE':
+        success = delete_monitor_activity_by_id(m_id)
+        if success:
+            return JsonResponse(HttpResult.ok().to_dict())
+        else:
+            return JsonResponse(HttpResult.error('监控活动不存在').to_dict(), status=404)
+    else:
+        return JsonResponse(HttpResult.error('Method not allowed').to_dict(), status=405)
 
 
 def test(request):

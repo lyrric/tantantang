@@ -11,7 +11,7 @@
     <!-- 引入 Font Awesome 图标 -->
     <link rel="stylesheet" href="https://fastly.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
     <!-- 引入自定义样式 -->
-    <link rel="stylesheet" href="css/user-config.css">
+    <link rel="stylesheet" href="css/activity-list.css">
     <!-- 引入 Element UI 组件库 -->
     <script src="https://unpkg.com/element-ui/lib/index.js"></script>
     <style>
@@ -144,6 +144,12 @@
             color: #409EFF !important;
         }
 
+        .btn-monitor {
+            background-color: #f0f9eb !important;
+            border-color: #c2e1a0 !important;
+            color: #67c23a !important;
+        }
+
         .search-container {
             display: flex;
             gap: 15px;
@@ -201,6 +207,9 @@
             </a>
             <a href="activity-list.html" class="nav-link active">
                 🎁 活动列表
+            </a>
+            <a href="monitor-activity.html" class="nav-link">
+                📊 活动监控
             </a>
         </div>
     </nav>
@@ -288,6 +297,12 @@
                                     @click="handleActivityAction(activity)">
                                 {{ getButtonText(activity) }}
                             </el-button>
+                            <el-button
+                                    size="small"
+                                    class="btn-monitor"
+                                    @click="openMonitorDialog(activity)">
+                                监控
+                            </el-button>
                         </div>
                     </div>
                 </div>
@@ -308,6 +323,28 @@
             没有更多数据了
         </div>
     </el-card>
+
+    <!-- 监控活动对话框 -->
+    <el-dialog title="设置监控" :visible.sync="monitorDialogVisible" width="400px">
+        <el-form :model="monitorForm" label-width="100px">
+            <el-form-item label="门店名称">
+                <el-input v-model="monitorForm.shop_name" disabled></el-input>
+            </el-form-item>
+            <el-form-item label="当前价格">
+                <el-input v-model="monitorForm.current_price" disabled></el-input>
+            </el-form-item>
+            <el-form-item label="价格阈值">
+                <el-input v-model.number="monitorForm.threshold_price" placeholder="请输入价格阈值"></el-input>
+            </el-form-item>
+            <el-form-item label="用户名称">
+                <el-input v-model="monitorForm.username" disabled></el-input>
+            </el-form-item>
+        </el-form>
+        <span slot="footer" class="dialog-footer">
+            <el-button @click="monitorDialogVisible = false">取 消</el-button>
+            <el-button type="primary" @click="createMonitorActivity" :loading="submitLoading">确 定</el-button>
+        </span>
+    </el-dialog>
 </div>
 
 <script>
@@ -323,7 +360,18 @@
                 pageNum: 1,
                 pageSize: 10,
                 hasMore: true,
-                loadingMore: false
+                loadingMore: false,
+                // 监控对话框相关数据
+                monitorDialogVisible: false,
+                submitLoading: false,
+                monitorForm: {
+                    m_type: 1, // 监控类型，1:低于某值时提醒
+                    shop_name: '',
+                    user_id: null,
+                    status: 1, // 1:正常
+                    threshold_price: null,
+                    current_price: null
+                }
             }
         },
         mounted() {
@@ -448,6 +496,55 @@
             // 跳转到用户配置页面
             goToUserConfig() {
                 window.location.href = '/user-config.html'
+            },
+
+            // 打开监控对话框
+            openMonitorDialog(activity) {
+                // 查找当前选中的用户配置，获取用户名
+                const currentUserConfig = this.userConfigs.find(config => config.user_id === this.selectedUserId);
+                const username = currentUserConfig ? currentUserConfig.name : '';
+
+                this.monitorForm = {
+                    m_type: 1, // 监控类型，1:低于某值时提醒
+                    shop_name: activity.shop_name,
+                    user_id: this.selectedUserId,
+                    status: 1, // 1:正常
+                    threshold_price: null,
+                    current_price: activity.price,
+                    username: username  // 添加用户名字段
+                };
+                this.monitorDialogVisible = true;
+            },
+
+            // 创建监控活动
+            async createMonitorActivity() {
+                if (!this.monitorForm.threshold_price) {
+                    this.$message.warning('请输入价格阈值');
+                    return;
+                }
+
+                this.submitLoading = true;
+                try {
+                    const response = await fetch('/ttt/monitor-activities/create', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(this.monitorForm)
+                    });
+
+                    const result = await response.json();
+                    if (result.code === 200) {
+                        this.$message.success('监控设置成功');
+                        this.monitorDialogVisible = false;
+                    } else {
+                        this.$message.error(result.msg || '监控设置失败');
+                    }
+                } catch (error) {
+                    this.$message.error('网络错误: ' + error.message);
+                } finally {
+                    this.submitLoading = false;
+                }
             }
         }
     })

@@ -25,5 +25,12 @@ urlpatterns = [
     path('user-configs/<int:user_id>/delete', views.delete_user_config, name='delete_user_config'),
     path('user-configs/<int:user_id>/start', views.start_bargain, name='start_bargain'),
     path('activity-list/<int:user_id>', views.get_activity_list, name='get_activity_list'),
+    
+    # MonitorActivity相关路由
+    path('monitor-activities', views.get_monitor_activities, name='get_monitor_activities'),
+    path('monitor-activities/create', views.create_monitor_activity, name='create_monitor_activity'),
+    path('monitor-activities/<int:m_id>/update', views.update_monitor_activity, name='update_monitor_activity'),
+    path('monitor-activities/<int:m_id>/delete', views.delete_monitor_activity, name='delete_monitor_activity'),
+    
     path('test', views.test, name='test'),
 ]

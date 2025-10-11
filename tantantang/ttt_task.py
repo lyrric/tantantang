@@ -173,8 +173,6 @@ async def bargain_one(user_config: UserConfig, activity: Activity, num: int = 1)
         else:
             user_config.bar_gain_state.status = 3
             user_config.bar_gain_state.remark = http_result.msg
-        # update_bargain_state(user_config, status, city_name, page_num, remark=http_result.msg)
-        # await send_message(user_config.spt, "自动砍价异常",f"砍价异常<br/> 错误信息：{http_result.msg}")
         return 0
 
 
@@ -203,6 +201,11 @@ def do_pause(user_config: UserConfig, task_queue: queue.Queue[Activity]):
         data.append(json.dumps(activity.to_dict()))
     conn = get_redis_connection()
     conn.lpush(f"{pause_pre_fix}{user_config.user_id}", *data)
+    # 计算今天剩余秒数（到24点）
+    now = datetime.datetime.now()
+    expire_time = datetime.datetime(now.year, now.month, now.day, 23, 59, 59)
+    expire_seconds = int((expire_time - now).total_seconds())
+    conn.expire(f"{pause_pre_fix}{user_config.user_id}", expire_seconds)
     log.info(f"name:{user_config.name} save task_queue success, size: {len(data)}")
 
 
