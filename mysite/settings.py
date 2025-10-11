@@ -30,10 +30,10 @@ ALLOWED_HOSTS = ['*']
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [
-    BASE_DIR / "static",  # 项目根目录下的static文件夹
-]
-
+# STATICFILES_DIRS = [
+#     BASE_DIR / "static",  # 项目根目录下的static文件夹
+# ]
+STATIC_ROOT = BASE_DIR / "static"
 # Application definition
 
 INSTALLED_APPS = [
