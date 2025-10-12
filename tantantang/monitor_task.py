@@ -59,6 +59,7 @@ def start_monitor():
             else:
                 # 默认情况（理论上不会到达这里，因为上面已经处理了0-8点的情况）
                 sleep_time = 60
+            log.info(f"当前时间为 {current_hour} 点，休眠时间：{sleep_time}秒")
             time.sleep(sleep_time)
         except Exception as e:
             log.error(f"监控任务出错：{e}", exc_info=True)
