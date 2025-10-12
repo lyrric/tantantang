@@ -20,31 +20,48 @@ OLD_ACTIVITY_PRE_FIX = "TTT:OLD_ACTIVITY:"
 
 def start_monitor():
     while True:
-        # 检查当前时间是否在00:00到08:00之间，如果是则跳过执行
-        current_hour = datetime.now().hour
-        if 0 <= current_hour < 8:
-            log.info(f"当前时间为 {current_hour} 点，处于00:00-08:00时间段，跳过执行监控任务")
-            time.sleep(60)
-            continue
-
-        monitors = get_all_monitor_activities()
-        tasks = []
-        for monitor in monitors:
-            if monitor.status != 1:
-                continue
-            # 创建协程任务而不是直接创建asyncio任务
-            tasks.append(monitor_one(monitor))
-
-        # 创建新的事件循环并运行所有任务
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
         try:
-            # 等待所有任务完成
-            loop.run_until_complete(asyncio.gather(*tasks))
-        finally:
-            loop.close()
+            # 检查当前时间是否在00:00到08:00之间，如果是则跳过执行
+            current_hour = datetime.now().hour
+            if 0 <= current_hour < 8:
+                log.info(f"当前时间为 {current_hour} 点，处于00:00-08:00时间段，跳过执行监控任务")
+                time.sleep(60 * 10)
+                continue
 
-        time.sleep(60)
+            monitors = get_all_monitor_activities()
+            tasks = []
+            for monitor in monitors:
+                if monitor.status != 1:
+                    continue
+                # 创建协程任务而不是直接创建asyncio任务
+                tasks.append(monitor_one(monitor))
+
+            # 创建新的事件循环并运行所有任务
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                # 等待所有任务完成
+                loop.run_until_complete(asyncio.gather(*tasks))
+            finally:
+                loop.close()
+
+            # 根据当前小时确定休眠时间
+            current_hour = datetime.now().hour
+            if 8 <= current_hour < 14:
+                # 8点到14点，每10分钟执行一次
+                sleep_time = 10 * 60
+            elif 14 <= current_hour < 18:
+                # 14点到18点，每5分钟执行一次
+                sleep_time = 5 * 60
+            elif 18 <= current_hour < 24:
+                # 18点到24点，每分钟执行一次
+                sleep_time = 60
+            else:
+                # 默认情况（理论上不会到达这里，因为上面已经处理了0-8点的情况）
+                sleep_time = 60
+            time.sleep(sleep_time)
+        except Exception as e:
+            log.error(f"监控任务出错：{e}", exc_info=True)
 
 
 """
@@ -70,12 +87,12 @@ async def monitor_one(monitor_activity: MonitorActivity):
             log.info(f"{user_config.name} No activity with shop_name:{monitor_activity.shop_name}")
             return
         current_activities = [activity for activity in current_activities if
-                              activity.shop_name == monitor_activity.shop_name and activity.sy_store > 0]
+                              activity.shop_name == monitor_activity.shop_name]
         if len(current_activities) < 1:
             log.info(f"{user_config.name} No activity with shop_name:{monitor_activity.shop_name}")
             return
         log.info(
-            f"{user_config.name} activity count is {len(current_activities)} with shop_name:{monitor_activity.shop_name}")
+            f"{user_config.name} activities count is {len(current_activities)} with shop_name:{monitor_activity.shop_name}")
         old_activity_key = f"{OLD_ACTIVITY_PRE_FIX}{monitor_activity.user_id}"
         conn = get_redis_connection()
         data = conn.hget(old_activity_key, monitor_activity.shop_name)
@@ -90,24 +107,37 @@ async def monitor_one(monitor_activity: MonitorActivity):
         old_activities = [old_act for old_act in old_activities if old_act.activitygoods_id in current_activity_ids]
         message_str = ''
         for current_activity in current_activities:
-            old_activity = [activity for activity in old_activities if
-                            activity.activitygoods_id == current_activity.activitygoods_id]
-            if len(old_activity) <= 0:
-                # 添加新的数据
+            snapshot_activities: list[Activity] = [activity for activity in old_activities if
+                                                   activity.activitygoods_id == current_activity.activitygoods_id]
+            if len(snapshot_activities) <= 0:
+                # 新的活动
                 old_activities.append(current_activity)
-            if current_activity.price > monitor_activity.threshold_price:
+                if current_activity.sy_store > 0 and current_activity.price <= monitor_activity.threshold_price:
+                    # 新的活动价格低于阈值
+                    log.info(
+                        f"{user_config.name} 找到新的活动：{current_activity.title} 当前价格:{current_activity.price}")
+                    message_str += build_message(current_activity, None)
                 continue
-            if len(old_activity) <= 0:
-                # 新数据
-                log.info(f"{user_config.name} 找到新的活动：{current_activity.title} 当前价格:{current_activity.price}")
-                message_str += build_message(current_activity, None)
-            elif current_activity.price != old_activity[0].price:
-                # 判断价格是否有变化
-                log.info(
-                    f"{user_config.name} 找到新的活动：{current_activity.title} 价格:{old_activity[0].price}-->{current_activity.price}")
-                message_str += build_message(current_activity, old_activity[0])
-                # 将新的价格赋值给老的数据，这里做的不太好，应该讲新的数据整个替换掉老数据
-                old_activity[0].price = current_activity.price
+            else:
+                # 有快照数据
+                if current_activity.sy_store <= 0:
+                    # 当前活动卖光了
+                    if snapshot_activities[0].sy_store > 0:
+                        # 快照没有卖出，需要发送商品被售卖的消息
+                        message_str += build_sold_message(current_activity)
+                else:
+                    # 当前活动有库存
+                    if current_activity.price <= monitor_activity.threshold_price:
+                        # 快照价格低于阈值
+                        if snapshot_activities[0].price != current_activity.price:
+                            # 价格有变化
+                            log.info(
+                                f"{user_config.name}，{current_activity.title} 价格低于:{monitor_activity.threshold_price} "
+                                f"价格:{snapshot_activities[0].price}-->{current_activity.price}")
+                            message_str += build_message(current_activity, snapshot_activities[0])
+                # 将新的价格赋值给老的数据，这里做的不太好，应该将新的数据整个替换掉老数据
+                snapshot_activities[0].sy_store = 0
+                snapshot_activities[0].price = current_activity.price
         # 保存数据
         save_data = [json.dumps(activity.to_dict()) for activity in old_activities]
         conn.hset(old_activity_key, monitor_activity.shop_name, json.dumps(save_data))
@@ -121,11 +151,22 @@ async def monitor_one(monitor_activity: MonitorActivity):
 
 
 def build_message(current_activity: Activity, old_activity: Activity | None) -> str:
-    message = f"标题:{current_activity.title}<br/>"
+    message = ''
+    if old_activity is None:
+        message += '新活动'
+    message += f"标题:{current_activity.title}<br/>"
     message += f"门店:{current_activity.shop_name}<br/>"
     if old_activity is not None:
         message += f"价格:{old_activity.price}-->{current_activity.price}<br/>"
     else:
         message += f"价格:{current_activity.price}<br/>"
+    message += "<br/>"
+    return message
+
+
+def build_sold_message(current_activity: Activity) -> str:
+    message = f"标题:{current_activity.title}<br/>"
+    message += f"门店:{current_activity.shop_name}<br/>"
+    message += f"已卖出，售出价格：{current_activity.price}<br/>"
     message += "<br/>"
     return message
