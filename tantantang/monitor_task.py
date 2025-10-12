@@ -91,8 +91,10 @@ async def monitor_one(monitor_activity: MonitorActivity):
         if len(current_activities) < 1:
             log.info(f"{user_config.name} No activity with shop_name:{monitor_activity.shop_name}")
             return
-        log.info(
-            f"{user_config.name} activities count is {len(current_activities)} with shop_name:{monitor_activity.shop_name}")
+        else:
+            available_activities = [activity for activity in current_activities if activity.sy_store > 0]
+            log.info(
+                f"{user_config.name} activities count is {len(available_activities)} with shop_name:{monitor_activity.shop_name}")
         old_activity_key = f"{OLD_ACTIVITY_PRE_FIX}{monitor_activity.user_id}"
         conn = get_redis_connection()
         data = conn.hget(old_activity_key, monitor_activity.shop_name)
@@ -135,8 +137,8 @@ async def monitor_one(monitor_activity: MonitorActivity):
                                 f"{user_config.name}，{current_activity.title} 价格低于:{monitor_activity.threshold_price} "
                                 f"价格:{snapshot_activities[0].price}-->{current_activity.price}")
                             message_str += build_message(current_activity, snapshot_activities[0])
-                # 将新的价格赋值给老的数据，这里做的不太好，应该将新的数据整个替换掉老数据
-                snapshot_activities[0].sy_store = 0
+                # 将新的价格、和库存赋值给老的数据，这里做的不太好，应该将新的数据整个替换掉老数据
+                snapshot_activities[0].sy_store = current_activity.sy_store
                 snapshot_activities[0].price = current_activity.price
         # 保存数据
         save_data = [json.dumps(activity.to_dict()) for activity in old_activities]
