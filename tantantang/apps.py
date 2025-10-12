@@ -1,4 +1,5 @@
 from django.apps import AppConfig
+from tantantang.monitor_task import start_task
 
 
 class TantantangConfig(AppConfig):
@@ -8,6 +9,6 @@ class TantantangConfig(AppConfig):
     def ready(self):
         # 导入监控任务模块以启动监控线程
         try:
-            import tantantang.monitor_task
+            start_task()
         except ImportError:
             pass

@@ -66,16 +66,10 @@ def start_monitor():
             log.error(f"监控任务出错：{e}", exc_info=True)
 
 
-"""
-在新线程中启动监控任务，但仅在主进程中启动
-"""
-# 检查是否是主进程，避免在Django开发服务器的重载进程中重复启动
-if os.environ.get('RUN_MAIN') == 'true':
+def start_task():
     thread = threading.Thread(target=start_monitor)
     thread.daemon = True  # 设置为守护线程，主程序退出时该线程也会退出
     thread.start()
-else:
-    log.info("当前为Django重载进程，跳过启动监控线程")
 
 
 async def monitor_one(monitor_activity: MonitorActivity):
