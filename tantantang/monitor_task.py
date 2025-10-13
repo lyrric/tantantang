@@ -1,18 +1,17 @@
 import asyncio
 import json
-import time
 import threading
+import time
 from datetime import datetime
-import os
 
 from django_redis import get_redis_connection
 
 import tantantang.logging_config
+from tantantang.message import send_message
 from tantantang.models import MonitorActivity, Activity
+from tantantang.monitor_activity_service import get_all_monitor_activities
 from tantantang.ttt_http import get_activity_list
 from tantantang.user_config_service import get_user_config_by_uid
-from tantantang.message import send_message
-from tantantang.monitor_activity_service import get_all_monitor_activities
 
 log = tantantang.logging_config.get_logger(__name__)
 
@@ -145,7 +144,7 @@ async def monitor_one(monitor_activity: MonitorActivity):
         conn.hset(old_activity_key, monitor_activity.shop_name, json.dumps(save_data))
         # 发送消息
         if len(message_str) > 0:
-            await send_message(user_config.spt, "有新的活动提醒了", message_str)
+            await send_message(user_config.spt, "弹弹糖：有新的活动事件了", message_str)
         log.info(f"监控完成：{monitor_activity.shop_name}")
     except Exception as e:
         log.error(f"监控异常：{monitor_activity.shop_name}")

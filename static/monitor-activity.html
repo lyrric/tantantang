@@ -119,7 +119,7 @@
     </el-card>
 
     <!-- 新增/编辑对话框 -->
-    <el-dialog :title="dialogTitle" :visible.sync="dialogVisible" width="90%" max-width="500px"
+    <el-dialog :title="dialogTitle" :visible.sync="dialogVisible" width="500px" max-width="90%"
                @close="handleDialogClose">
         <el-form :model="currentActivity" label-width="100px">
             <el-form-item v-if="!isEditing" label="监控类型">
