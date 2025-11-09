@@ -206,7 +206,7 @@ async def get_city_list() -> list[City]:
                 result_dict = await response.json()
                 code = result_dict['code']
                 if code == 1:
-                    dicts = result_dict['data'].values()
+                    dicts = result_dict['data']
                     return [City.from_dict(data) for data in dicts]
                 else:
                     raise BusinessException(f"获取城市列表失败 {result_dict['msg']}")

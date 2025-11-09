@@ -58,7 +58,7 @@ def _get_rtp(url_: str, user_id: int, data_: Dict[str, Any]) -> Dict[str, Any]:
 
 def _generate_salt() -> str:
     # 对应Java代码中的盐值
-    return "#!LTtTJ*(MiNi)*!#"
+    return "JSTtT*(lvlv!#^&%~~"
 
 
 def _md5(input_str: str) -> str:
