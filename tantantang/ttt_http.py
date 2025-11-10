@@ -102,6 +102,9 @@ async def bar_gain(token, user_id, user_key, activitygoods_id, yq_user_id='') ->
                     if code == 1:
                         data = result_dict['data']
                         score = data.get('score')
+                        if score == 0:
+                            log.warn(f"糖果为0 {result_dict}")
+                            return HttpResult.ok(0.1)
                         if score is None:
                             log.warn("获取糖果数量失败，应该是user_key过期了")
                             return HttpResult.error("获取糖果数量失败，应该是user_key过期了")

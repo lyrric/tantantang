@@ -8,7 +8,7 @@ log = logging_config.get_logger(__name__)
 
 
 async def send_message(spt, summary, content):
-    if spt is None:
+    if spt is None or spt == '':
         log.warn("未配置SPT，不发送消息")
         return
     body_map = {

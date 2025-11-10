@@ -77,4 +77,4 @@ if __name__ == "__main__":
         "unmi": "6665"
     }
     url = "/api/shop/bargainings_ws"
-    print(generate_rq_token(url, data, None))
+    print(generate_rq_token(url, data, 1233))

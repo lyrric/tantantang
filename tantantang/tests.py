@@ -22,7 +22,8 @@ def test_get_activity_list():
 
 
 def test_bar_gain():
-    result = asyncio.run(ttt_http.bar_gain('', '', '', None))
+    result = asyncio.run(
+        ttt_http.bar_gain('', '', '', ))
     log.info(result)
 
 
@@ -39,4 +40,4 @@ def test_get_user_info():
     log.info(result)
 
 
-test_get_user_info()
+test_bar_gain()
