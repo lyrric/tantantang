@@ -3,7 +3,7 @@ from django.db import models
 
 # 活动列表
 class Activity:
-    def __init__(self, activitygoods_id: int = None, activity_id: int = None, createtime: int = None,
+    def __init__(self, activitygoods_id: int = None, activity_id: int = None,
                  first_price: float = None,
                  title: str = None, hot: int = None, y_price: float = None, price: float = None, shop_name: str = None,
                  is_stop: int = None,
@@ -13,7 +13,6 @@ class Activity:
         """
         :param activitygoods_id: 商品id
         :param activity_id: 活动id
-        :param createtime: 创建时间戳，秒级
         :param first_price: 价格，有时候为0，有时候跟price，暂时不用
         :param title: 标题
         :param hot: 热度
@@ -40,7 +39,6 @@ class Activity:
         """
         self.activitygoods_id = activitygoods_id
         self.activity_id = activity_id
-        self.createtime = createtime
         self.first_price = first_price
         self.title = title
         self.hot = hot
@@ -75,7 +73,6 @@ class Activity:
         return cls(
             activitygoods_id=data.get('activitygoods_id'),
             activity_id=data.get('activity_id'),
-            createtime=data.get('createtime'),
             first_price=data.get('first_price'),
             title=data.get('title'),
             hot=data.get('hot'),
@@ -112,7 +109,6 @@ class Activity:
         return {
             "activitygoods_id": self.activitygoods_id,
             "activity_id": self.activity_id,
-            "createtime": self.createtime,
             "first_price": self.first_price,
             "title": self.title,
             "hot": self.hot,
@@ -774,7 +770,7 @@ class ActivityDetail:
     def __init__(self, id: int = None, user_id: int = None, activity_id: int = None, goods_id: int = None,
                  shop_id: int = None, title: str = None, y_price: str = None, price: str = None,
                  first_price: str = None, store: int = None, sy_store: int = None, hot: int = None,
-                 is_sell: int = None, createtime: int = None, kan: int = None, goods: Goods = None,
+                 is_sell: int = None, kan: int = None, goods: Goods = None,
                  shop: Shop = None, activity: ActivityInfo = None, is_sell_text: str = None,
                  grass: list = None, rice: float = None, is_cut: int = None):
         """
@@ -791,7 +787,6 @@ class ActivityDetail:
         :param sy_store: 剩余库存
         :param hot: 热度
         :param is_sell: 是否销售
-        :param createtime: 创建时间戳
         :param kan: 是否可砍价
         :param goods: 商品信息
         :param shop: 商店信息
@@ -814,7 +809,6 @@ class ActivityDetail:
         self.sy_store = sy_store
         self.hot = hot
         self.is_sell = is_sell
-        self.createtime = createtime
         self.kan = kan
         self.goods = goods
         self.shop = shop
@@ -857,7 +851,6 @@ class ActivityDetail:
             sy_store=data.get('sy_store'),
             hot=data.get('hot'),
             is_sell=data.get('is_sell'),
-            createtime=data.get('createtime'),
             kan=data.get('kan'),
             goods=goods,
             shop=shop,
@@ -890,7 +883,6 @@ class ActivityDetail:
             "sy_store": self.sy_store,
             "hot": self.hot,
             "is_sell": self.is_sell,
-            "createtime": self.createtime,
             "kan": self.kan,
             "goods": self.goods.to_dict() if self.goods else None,
             "shop": self.shop.to_dict() if self.shop else None,
